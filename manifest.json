@@ -1,0 +1,10 @@
+{
+    "id": "orbit",
+    "name": "Orbit",
+    "version": "0.0.1",
+    "minAppVersion": "1.0.0",
+    "description": "A Relationship Manager for Obsidian - Keep your people in your orbit",
+    "author": "Brad Wales",
+    "authorUrl": "https://github.com/thuban87",
+    "isDesktopOnly": false
+}
