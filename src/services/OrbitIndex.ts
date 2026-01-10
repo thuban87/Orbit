@@ -38,8 +38,10 @@ export class OrbitIndex extends Events {
 
     /**
      * Scan the entire vault for person files.
+     * Public so it can be called after settings changes.
      */
-    private async scanVault(): Promise<void> {
+    async scanVault(): Promise<void> {
+        this.contacts.clear();
         const files = this.app.vault.getMarkdownFiles();
 
         for (const file of files) {
@@ -228,9 +230,12 @@ Photo: ${contact.photo ? "✓" : "✗"}
     }
 
     /**
-     * Update settings reference.
+     * Update settings reference and re-scan the vault.
      */
-    updateSettings(settings: OrbitSettings): void {
+    async updateSettings(settings: OrbitSettings): Promise<void> {
         this.settings = settings;
+        await this.scanVault();
+        console.log(`Orbit: Re-scanned vault. Found ${this.contacts.size} contacts.`);
+        this.trigger("change");
     }
 }

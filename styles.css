@@ -4,9 +4,12 @@
    CSS Variables (Theme Compatible)
    ================================ */
 .orbit-container {
-  --orbit-stable: #22c55e;      /* Green - recent contact */
-  --orbit-wobble: #eab308;      /* Yellow - approaching due */
-  --orbit-decay: #ef4444;       /* Red - overdue */
+  --orbit-stable: #22c55e;
+  /* Green - recent contact */
+  --orbit-wobble: #eab308;
+  /* Yellow - approaching due */
+  --orbit-decay: #ef4444;
+  /* Red - overdue */
   --orbit-ring-width: 3px;
   --orbit-avatar-size: 60px;
   --orbit-card-gap: 12px;
@@ -115,4 +118,30 @@
 
 .orbit-empty h3 {
   margin-bottom: 8px;
+}
+
+/* ================================
+   Sections
+   ================================ */
+.orbit-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.orbit-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.orbit-section-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--background-modifier-border);
 }
