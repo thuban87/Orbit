@@ -11,7 +11,7 @@ export interface OrbitSettings {
 }
 
 export const DEFAULT_SETTINGS: OrbitSettings = {
-    personTag: "person",
+    personTag: "people",
     ignoredPaths: ["Templates", "Archive"],
     dateFormat: "YYYY-MM-DD",
 };
