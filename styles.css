@@ -145,3 +145,80 @@
   padding-bottom: 4px;
   border-bottom: 1px solid var(--background-modifier-border);
 }
+
+/* ================================
+   Tooltip (Conversational Fuel)
+   ================================ */
+.orbit-tooltip {
+  position: fixed;
+  z-index: 1000;
+  width: 280px;
+  max-height: 300px;
+  overflow-y: auto;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 12px;
+  font-size: 0.85rem;
+}
+
+.orbit-tooltip-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.orbit-tooltip-status {
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.orbit-tooltip-status--stable {
+  background: var(--orbit-stable);
+  color: white;
+}
+
+.orbit-tooltip-status--wobble {
+  background: var(--orbit-wobble);
+  color: black;
+}
+
+.orbit-tooltip-status--decay {
+  background: var(--orbit-decay);
+  color: white;
+}
+
+.orbit-tooltip-content {
+  color: var(--text-normal);
+  line-height: 1.4;
+}
+
+.orbit-tooltip-content ul {
+  margin: 4px 0 8px 0;
+  padding-left: 1.2em;
+}
+
+.orbit-tooltip-content li {
+  margin: 2px 0;
+}
+
+.orbit-fuel-subheader {
+  margin-top: 8px;
+  margin-bottom: 2px;
+  color: var(--text-muted);
+}
+
+.orbit-tooltip-loading,
+.orbit-tooltip-empty {
+  color: var(--text-muted);
+  font-style: italic;
+  text-align: center;
+  padding: 8px;
+}
