@@ -1,0 +1,33 @@
+{
+  "name": "obsidian-orbit",
+  "version": "0.0.1",
+  "description": "A Relationship Manager plugin for Obsidian - Keep your people in your orbit",
+  "main": "main.js",
+  "scripts": {
+    "dev": "node esbuild.config.mjs",
+    "build": "node esbuild.config.mjs production",
+    "deploy": "node esbuild.config.mjs production && node deploy.mjs"
+  },
+  "keywords": [
+    "obsidian",
+    "plugin",
+    "crm",
+    "relationship-manager"
+  ],
+  "author": "Brad Wales",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "builtin-modules": "^3.3.0",
+    "esbuild": "^0.19.0",
+    "obsidian": "latest",
+    "tslib": "^2.6.0",
+    "typescript": "^5.3.0"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  }
+}
