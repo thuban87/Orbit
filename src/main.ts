@@ -1,11 +1,13 @@
-import { Plugin, TFile, WorkspaceLeaf } from "obsidian";
+import { Plugin, TFile, WorkspaceLeaf, MarkdownView } from "obsidian";
 import { OrbitSettingTab, OrbitSettings, DEFAULT_SETTINGS } from "./settings";
 import { OrbitIndex } from "./services/OrbitIndex";
 import { OrbitView, VIEW_TYPE_ORBIT } from "./views/OrbitView";
+import { LinkListener } from "./services/LinkListener";
 
 export default class OrbitPlugin extends Plugin {
     settings: OrbitSettings;
     index: OrbitIndex;
+    linkListener: LinkListener;
 
     async onload() {
         console.log("Orbit: Loading plugin...");
@@ -72,6 +74,18 @@ export default class OrbitPlugin extends Plugin {
             })
         );
 
+        // Initialize the Link Listener (The "Tether")
+        this.linkListener = new LinkListener(this.app, this.index, this.settings);
+
+        // Subscribe to editor changes for link detection
+        this.registerEvent(
+            this.app.workspace.on("editor-change", (editor, info) => {
+                if (info.file) {
+                    this.linkListener.handleEditorChange(info.file);
+                }
+            })
+        );
+
         // Register settings tab
         this.addSettingTab(new OrbitSettingTab(this.app, this));
 
@@ -108,6 +122,9 @@ export default class OrbitPlugin extends Plugin {
         await this.saveData(this.settings);
         // Update the index with new settings and re-scan
         await this.index.updateSettings(this.settings);
+        // Update link listener settings
+        this.linkListener.updateSettings(this.settings);
+        this.linkListener.clearCache();
     }
 
     /**
