@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { Menu, Notice } from "obsidian";
 import { OrbitContact } from "../types";
 import { useOrbit } from "../context/OrbitContext";
 import { FuelTooltip } from "./FuelTooltip";
@@ -36,10 +37,10 @@ function stringToColor(str: string): string {
 
 /**
  * ContactCard - Individual contact avatar with status ring and name.
- * Hover shows Conversational Fuel tooltip.
+ * Hover shows Conversational Fuel tooltip. Right-click shows context menu.
  */
 export function ContactCard({ contact }: ContactCardProps) {
-    const { plugin } = useOrbit();
+    const { plugin, refreshContacts } = useOrbit();
     const [showTooltip, setShowTooltip] = useState(false);
     const cardRef = useRef<HTMLDivElement>(null);
     const hoverTimeoutRef = useRef<number | null>(null);
@@ -49,6 +50,128 @@ export function ContactCard({ contact }: ContactCardProps) {
         // Open the contact's note
         const leaf = plugin.app.workspace.getLeaf(e.ctrlKey || e.metaKey);
         leaf.openFile(contact.file);
+    };
+
+    const handleContextMenu = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const menu = new Menu();
+
+        // Mark as contacted today
+        menu.addItem((item) =>
+            item
+                .setTitle("✓ Mark as contacted today")
+                .setIcon("check")
+                .onClick(async () => {
+                    await markAsContacted();
+                })
+        );
+
+        menu.addSeparator();
+
+        // Snooze options
+        menu.addItem((item) =>
+            item
+                .setTitle("⏸️ Snooze for 1 week")
+                .setIcon("clock")
+                .onClick(async () => {
+                    await snoozeContact(7);
+                })
+        );
+
+        menu.addItem((item) =>
+            item
+                .setTitle("⏸️ Snooze for 1 month")
+                .setIcon("clock")
+                .onClick(async () => {
+                    await snoozeContact(30);
+                })
+        );
+
+        if (contact.status === "snoozed") {
+            menu.addItem((item) =>
+                item
+                    .setTitle("▶️ Unsnooze")
+                    .setIcon("play")
+                    .onClick(async () => {
+                        await unsnoozeContact();
+                    })
+            );
+        }
+
+        menu.addSeparator();
+
+        // Open note
+        menu.addItem((item) =>
+            item
+                .setTitle("Open note")
+                .setIcon("file-text")
+                .onClick(() => {
+                    plugin.app.workspace.getLeaf().openFile(contact.file);
+                })
+        );
+
+        menu.addItem((item) =>
+            item
+                .setTitle("Open in new tab")
+                .setIcon("file-plus")
+                .onClick(() => {
+                    plugin.app.workspace.getLeaf(true).openFile(contact.file);
+                })
+        );
+
+        menu.showAtMouseEvent(e.nativeEvent);
+    };
+
+    const markAsContacted = async () => {
+        const today = new Date().toISOString().split("T")[0];
+        try {
+            await plugin.app.fileManager.processFrontMatter(
+                contact.file,
+                (frontmatter) => {
+                    frontmatter.last_contact = today;
+                }
+            );
+            new Notice(`✓ ${contact.name} marked as contacted`);
+            refreshContacts();
+        } catch (error) {
+            new Notice(`Failed to update ${contact.name}`);
+        }
+    };
+
+    const snoozeContact = async (days: number) => {
+        const snoozeDate = new Date();
+        snoozeDate.setDate(snoozeDate.getDate() + days);
+        const snoozeStr = snoozeDate.toISOString().split("T")[0];
+
+        try {
+            await plugin.app.fileManager.processFrontMatter(
+                contact.file,
+                (frontmatter) => {
+                    frontmatter.snooze_until = snoozeStr;
+                }
+            );
+            new Notice(`⏸️ ${contact.name} snoozed until ${snoozeStr}`);
+            refreshContacts();
+        } catch (error) {
+            new Notice(`Failed to snooze ${contact.name}`);
+        }
+    };
+
+    const unsnoozeContact = async () => {
+        try {
+            await plugin.app.fileManager.processFrontMatter(
+                contact.file,
+                (frontmatter) => {
+                    delete frontmatter.snooze_until;
+                }
+            );
+            new Notice(`▶️ ${contact.name} unsnoozed`);
+            refreshContacts();
+        } catch (error) {
+            new Notice(`Failed to unsnooze ${contact.name}`);
+        }
     };
 
     const handleMouseEnter = () => {
@@ -98,6 +221,7 @@ export function ContactCard({ contact }: ContactCardProps) {
                 ref={cardRef}
                 className="orbit-card"
                 onClick={handleClick}
+                onContextMenu={handleContextMenu}
                 onMouseEnter={handleMouseEnter}
                 onMouseLeave={handleMouseLeave}
             >

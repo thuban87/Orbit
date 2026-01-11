@@ -64,8 +64,8 @@ export function ContactGrid({ sortMode, filterMode }: ContactGridProps) {
         if (sortMode === "name") {
             result.sort((a, b) => a.name.localeCompare(b.name));
         } else {
-            // By status (decay first, then wobble, then stable)
-            const statusOrder = { decay: 0, wobble: 1, stable: 2 };
+            // By status (decay first, then wobble, then stable, snoozed last)
+            const statusOrder: Record<string, number> = { decay: 0, wobble: 1, stable: 2, snoozed: 3 };
             result.sort((a, b) => statusOrder[a.status] - statusOrder[b.status]);
         }
 

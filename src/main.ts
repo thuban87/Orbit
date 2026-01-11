@@ -107,7 +107,83 @@ export default class OrbitPlugin extends Plugin {
             },
         });
 
+        // Register weekly digest command
+        this.addCommand({
+            id: "weekly-digest",
+            name: "Weekly Digest",
+            callback: async () => {
+                await this.generateWeeklyDigest();
+            },
+        });
+
         console.log("Orbit: Plugin loaded successfully!");
+    }
+
+    /**
+     * Generate a weekly digest markdown report.
+     */
+    async generateWeeklyDigest(): Promise<void> {
+        const contacts = this.index.getContactsByStatus();
+        const today = new Date();
+        const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+        // Group contacts
+        const contacted: string[] = [];
+        const overdue: string[] = [];
+        const snoozed: string[] = [];
+
+        for (const contact of contacts) {
+            if (contact.status === "snoozed") {
+                snoozed.push(`- ⏸️ ${contact.name}`);
+            } else if (contact.status === "decay") {
+                const days = contact.daysSinceContact === Infinity
+                    ? "never"
+                    : `${contact.daysSinceContact} days ago`;
+                overdue.push(`- 🔴 ${contact.name} (last: ${days})`);
+            } else if (contact.lastContact && contact.lastContact >= weekAgo) {
+                const dateStr = contact.lastContact.toISOString().split("T")[0];
+                contacted.push(`- ✅ ${contact.name} (${dateStr})`);
+            }
+        }
+
+        // Build report
+        const dateStr = today.toISOString().split("T")[0];
+        let report = `# Orbit Weekly Digest\n`;
+        report += `**Generated:** ${dateStr}\n\n`;
+
+        if (contacted.length > 0) {
+            report += `## 📞 Contacted This Week (${contacted.length})\n`;
+            report += contacted.join("\n") + "\n\n";
+        }
+
+        if (overdue.length > 0) {
+            report += `## 🔴 Needs Attention (${overdue.length})\n`;
+            report += overdue.join("\n") + "\n\n";
+        }
+
+        if (snoozed.length > 0) {
+            report += `## ⏸️ Snoozed (${snoozed.length})\n`;
+            report += snoozed.join("\n") + "\n\n";
+        }
+
+        report += `---\n`;
+        report += `*Total contacts: ${contacts.length}*\n`;
+
+        // Create or update the digest file
+        const filePath = `Orbit Weekly Digest ${dateStr}.md`;
+        const existingFile = this.app.vault.getAbstractFileByPath(filePath);
+
+        if (existingFile instanceof TFile) {
+            await this.app.vault.modify(existingFile, report);
+        } else {
+            await this.app.vault.create(filePath, report);
+        }
+
+        // Open the file
+        const file = this.app.vault.getAbstractFileByPath(filePath);
+        if (file instanceof TFile) {
+            this.app.workspace.getLeaf().openFile(file);
+        }
     }
 
     onunload() {

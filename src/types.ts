@@ -29,12 +29,17 @@ export const FREQUENCY_DAYS: Record<Frequency, number> = {
 /**
  * Orbital status indicating relationship health.
  */
-export type OrbitStatus = "stable" | "wobble" | "decay";
+export type OrbitStatus = "stable" | "wobble" | "decay" | "snoozed";
 
 /**
  * Social battery impact of a contact.
  */
 export type SocialBattery = "Charger" | "Neutral" | "Drain";
+
+/**
+ * Type of last interaction with a contact.
+ */
+export type LastInteractionType = "call" | "text" | "in-person" | "email" | "other";
 
 /**
  * Represents a contact in the Orbit system.
@@ -69,6 +74,15 @@ export interface OrbitContact {
 
     /** Social battery impact */
     socialBattery?: SocialBattery;
+
+    /** Snooze until date (YYYY-MM-DD) - contact won't show as overdue until after this date */
+    snoozeUntil?: Date | null;
+
+    /** Type of last interaction */
+    lastInteraction?: LastInteractionType;
+
+    /** Contact's birthday (MM-DD or YYYY-MM-DD format) */
+    birthday?: string;
 
     /** Conversational fuel content (cached) */
     fuel?: string[];
