@@ -87,8 +87,20 @@ export class OrbitIndex extends Events {
         // Parse last_contact date
         const lastContact = parseDate(frontmatter.last_contact);
 
-        // Calculate status
-        const status = calculateStatus(lastContact, frequency);
+        // Parse snooze_until date
+        const snoozeUntil = parseDate(frontmatter.snooze_until);
+
+        // Check if contact is snoozed (snooze_until is in the future)
+        const isSnoozed = snoozeUntil && snoozeUntil > new Date();
+
+        // Calculate base status
+        let status = calculateStatus(lastContact, frequency);
+
+        // Override to snoozed if applicable
+        if (isSnoozed) {
+            status = "snoozed";
+        }
+
         const daysSinceContact = calculateDaysSince(lastContact);
         const daysUntilDue = calculateDaysUntilDue(lastContact, frequency);
 
@@ -103,6 +115,9 @@ export class OrbitIndex extends Events {
             daysUntilDue,
             photo: frontmatter.photo,
             socialBattery: frontmatter.social_battery,
+            snoozeUntil: isSnoozed ? snoozeUntil : null,
+            lastInteraction: frontmatter.last_interaction,
+            birthday: frontmatter.birthday,
         };
     }
 
@@ -194,7 +209,7 @@ export class OrbitIndex extends Events {
      * Get contacts sorted by status (decay first, then wobble, then stable).
      */
     getContactsByStatus(): OrbitContact[] {
-        const statusOrder = { decay: 0, wobble: 1, stable: 2 };
+        const statusOrder = { decay: 0, wobble: 1, stable: 2, snoozed: 3 };
         return this.getContacts().sort(
             (a, b) => statusOrder[a.status] - statusOrder[b.status]
         );
@@ -259,6 +274,11 @@ Photo: ${contact.photo ? "✓" : "✗"}
                         : contact.daysUntilDue,
                 socialBattery: contact.socialBattery || null,
                 photo: contact.photo || null,
+                snoozeUntil: contact.snoozeUntil
+                    ? contact.snoozeUntil.toISOString().split("T")[0]
+                    : null,
+                lastInteraction: contact.lastInteraction || null,
+                birthday: contact.birthday || null,
             }));
 
             const output = {

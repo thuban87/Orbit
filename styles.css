@@ -74,6 +74,11 @@
   border-color: var(--orbit-decay);
 }
 
+.orbit-avatar--snoozed {
+  border-color: var(--text-muted);
+  opacity: 0.7;
+}
+
 /* Fallback avatar (initials) */
 .orbit-avatar-fallback {
   width: var(--orbit-avatar-size);
@@ -195,6 +200,11 @@
   color: white;
 }
 
+.orbit-tooltip-status--snoozed {
+  background: var(--text-muted);
+  color: white;
+}
+
 .orbit-tooltip-content {
   color: var(--text-normal);
   line-height: 1.4;
@@ -289,4 +299,58 @@
   display: flex;
   flex-direction: column;
   height: 100%;
+}
+
+/* ================================
+   Birthday Banner
+   ================================ */
+.orbit-birthday-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  background: linear-gradient(135deg, #fef2f2 0%, #fef9e7 100%);
+  border: 1px solid #fbbf24;
+  border-radius: 6px;
+}
+
+.theme-dark .orbit-birthday-banner {
+  background: linear-gradient(135deg, #451a03 0%, #422006 100%);
+  border-color: #92400e;
+}
+
+.orbit-birthday-icon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.orbit-birthday-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.orbit-birthday-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+.orbit-birthday-item:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.theme-dark .orbit-birthday-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.orbit-birthday-days {
+  font-size: 0.75rem;
+  color: var(--text-muted);
 }

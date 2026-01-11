@@ -2,6 +2,7 @@ import { useState } from "react";
 import { OrbitProvider, useOrbit } from "../context/OrbitContext";
 import { ContactGrid } from "../components/ContactGrid";
 import { OrbitHeader, SortMode, FilterMode } from "../components/OrbitHeader";
+import { BirthdayBanner } from "../components/BirthdayBanner";
 import OrbitPlugin from "../main";
 
 interface OrbitDashboardProps {
@@ -29,6 +30,7 @@ function DashboardContent() {
 
     return (
         <div className="orbit-dashboard">
+            <BirthdayBanner />
             <OrbitHeader
                 sortMode={sortMode}
                 filterMode={filterMode}

@@ -89,6 +89,19 @@ tags:
 
 ---
 
+## Phase 6: Advanced Features
+
+| Order | Feature | Details | Est. Time |
+|-------|---------|---------|-----------|
+| 27 | **Health Score** | Add 0-100% health score for granular status sorting. (Math TBD) | 2h |
+| 28 | **Snooze Status** | 4th status (`snoozed`) with `snooze_until: YYYY-MM-DD` field. ⏸️ icon. | 2h |
+| 29 | **Last Interaction Type** | Track `last_interaction: call | text | in-person | email` for variety suggestions. | 1h |
+| 30 | **Quick Actions Menu** | Right-click context menu: "Mark contacted", "Snooze 1 week", "Open note". | 2h |
+| 31 | **Birthday/Anniversary Alerts** | Banner at top of HUD when contact's birthday is within 7 days. | 2h |
+| 32 | **Weekly Digest Command** | "Orbit: Weekly Summary" generates markdown report of contacts made + overdue. | 2h |
+
+---
+
 ## Technical Debt / Risks to Watch
 
 *   **Large Vaults:** `metadataCache` events fire *a lot*. Debouncing Phase 3 is critical.
@@ -102,4 +115,6 @@ tags:
 *   **Phase 2:** ~10 hours
 *   **Phase 3:** ~7 hours
 *   **Phase 4:** ~7 hours
-*   **Total MVP:** ~30 hours
+*   **Phase 5:** ~3 hours
+*   **Phase 6:** ~11 hours
+*   **Total:** ~44 hours
