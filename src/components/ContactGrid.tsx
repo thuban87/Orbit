@@ -1,6 +1,8 @@
+import { useMemo } from "react";
 import { useOrbit } from "../context/OrbitContext";
 import { ContactCard } from "./ContactCard";
 import { OrbitContact } from "../types";
+import { SortMode, FilterMode } from "./OrbitHeader";
 
 /**
  * Category grouping configuration.
@@ -36,22 +38,63 @@ function getSectionIndex(contact: OrbitContact): number {
     return -1; // No match
 }
 
+interface ContactGridProps {
+    sortMode: SortMode;
+    filterMode: FilterMode;
+}
+
 /**
  * ContactGrid - Displays contacts organized into priority sections.
  */
-export function ContactGrid() {
+export function ContactGrid({ sortMode, filterMode }: ContactGridProps) {
     const { contacts } = useOrbit();
 
-    if (contacts.length === 0) {
+    // Apply filtering and sorting
+    const processedContacts = useMemo(() => {
+        let result = [...contacts];
+
+        // Apply filter
+        if (filterMode === "charger") {
+            result = result.filter((c) => c.socialBattery === "Charger");
+        } else if (filterMode === "decay") {
+            result = result.filter((c) => c.status === "decay" || c.status === "wobble");
+        }
+
+        // Apply sort
+        if (sortMode === "name") {
+            result.sort((a, b) => a.name.localeCompare(b.name));
+        } else {
+            // By status (decay first, then wobble, then stable)
+            const statusOrder = { decay: 0, wobble: 1, stable: 2 };
+            result.sort((a, b) => statusOrder[a.status] - statusOrder[b.status]);
+        }
+
+        return result;
+    }, [contacts, sortMode, filterMode]);
+
+    if (processedContacts.length === 0) {
         return (
             <div className="orbit-empty">
-                <h3>No contacts found</h3>
-                <p>
-                    Add the <code>#people</code> tag to your contact notes to see them here.
-                </p>
-                <p>
-                    <small>You can change the tag in Orbit settings.</small>
-                </p>
+                <h3>
+                    {contacts.length === 0
+                        ? "No contacts found"
+                        : "No contacts match filter"}
+                </h3>
+                {contacts.length === 0 ? (
+                    <>
+                        <p>
+                            Add the <code>#people</code> tag to your contact notes to see them
+                            here.
+                        </p>
+                        <p>
+                            <small>You can change the tag in Orbit settings.</small>
+                        </p>
+                    </>
+                ) : (
+                    <p>
+                        <small>Try changing your filter settings above.</small>
+                    </p>
+                )}
             </div>
         );
     }
@@ -60,7 +103,7 @@ export function ContactGrid() {
     const sections: OrbitContact[][] = CATEGORY_GROUPS.map(() => []);
     const other: OrbitContact[] = [];
 
-    for (const contact of contacts) {
+    for (const contact of processedContacts) {
         const sectionIdx = getSectionIndex(contact);
         if (sectionIdx >= 0) {
             sections[sectionIdx].push(contact);

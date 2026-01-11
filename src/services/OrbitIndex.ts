@@ -34,6 +34,7 @@ export class OrbitIndex extends Events {
         console.log("Orbit: Initializing contact index...");
         await this.scanVault();
         console.log(`Orbit: Found ${this.contacts.size} contacts.`);
+        await this.saveStateToDisk(); // Save initial state for AI agents
     }
 
     /**
@@ -149,6 +150,7 @@ export class OrbitIndex extends Events {
         }
 
         this.trigger("change");
+        this.saveStateToDisk(); // Non-blocking save
     }
 
     /**
@@ -158,6 +160,7 @@ export class OrbitIndex extends Events {
         if (this.contacts.has(file.path)) {
             this.contacts.delete(file.path);
             this.trigger("change");
+            this.saveStateToDisk(); // Non-blocking save
         }
     }
 
@@ -177,6 +180,7 @@ export class OrbitIndex extends Events {
         }
 
         this.trigger("change");
+        this.saveStateToDisk(); // Non-blocking save
     }
 
     /**
@@ -230,6 +234,53 @@ Photo: ${contact.photo ? "✓" : "✗"}
     }
 
     /**
+     * Dumps the current in-memory contact list to a JSON file
+     * so AI agents (like Gemini CLI) can read the current state.
+     */
+    async saveStateToDisk(): Promise<void> {
+        try {
+            // Convert contacts to serializable format (TFile can't be serialized)
+            const data = this.getContactsByStatus().map((contact) => ({
+                name: contact.name,
+                filePath: contact.file.path,
+                category: contact.category || null,
+                frequency: contact.frequency,
+                lastContact: contact.lastContact
+                    ? contact.lastContact.toISOString().split("T")[0]
+                    : null,
+                status: contact.status,
+                daysSinceContact:
+                    contact.daysSinceContact === Infinity
+                        ? null
+                        : contact.daysSinceContact,
+                daysUntilDue:
+                    contact.daysUntilDue === -Infinity
+                        ? null
+                        : contact.daysUntilDue,
+                socialBattery: contact.socialBattery || null,
+                photo: contact.photo || null,
+            }));
+
+            const output = {
+                generatedAt: new Date().toISOString(),
+                totalContacts: data.length,
+                contacts: data,
+            };
+
+            const jsonString = JSON.stringify(output, null, 2);
+
+            // Write to a dedicated state file in the plugin directory
+            await this.app.vault.adapter.write(
+                ".obsidian/plugins/orbit/orbit-state.json",
+                jsonString
+            );
+            // console.log("Orbit: State saved to disk for AI agents.");
+        } catch (error) {
+            console.error("Orbit: Failed to save state to disk", error);
+        }
+    }
+
+    /**
      * Update settings reference and re-scan the vault.
      */
     async updateSettings(settings: OrbitSettings): Promise<void> {
@@ -237,5 +288,7 @@ Photo: ${contact.photo ? "✓" : "✗"}
         await this.scanVault();
         console.log(`Orbit: Re-scanned vault. Found ${this.contacts.size} contacts.`);
         this.trigger("change");
+        await this.saveStateToDisk(); // Auto-save after settings change
     }
 }
+
