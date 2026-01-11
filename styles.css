@@ -222,3 +222,71 @@
   text-align: center;
   padding: 8px;
 }
+
+/* ================================
+   Header Controls
+   ================================ */
+.orbit-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0 12px 0;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.orbit-header-title {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.orbit-header-count {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.orbit-header-controls {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.orbit-select {
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  padding: 4px 6px;
+  font-size: 0.75rem;
+  color: var(--text-normal);
+  cursor: pointer;
+}
+
+.orbit-select:hover {
+  border-color: var(--interactive-accent);
+}
+
+.orbit-button {
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 0.85rem;
+  color: var(--text-normal);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.orbit-button:hover {
+  background: var(--background-modifier-hover);
+  border-color: var(--interactive-accent);
+}
+
+.orbit-dashboard {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
