@@ -10,8 +10,6 @@ export default class OrbitPlugin extends Plugin {
     linkListener: LinkListener;
 
     async onload() {
-        console.log("Orbit: Loading plugin...");
-
         // Load settings
         await this.loadSettings();
 
@@ -32,20 +30,19 @@ export default class OrbitPlugin extends Plugin {
             // Already initialized, scan immediately
             await this.index.initialize();
         } else {
-            // Wait for the "resolved" event
+            // Wait for the "resolved" event (fires once when cache is ready)
+            const resolvedHandler = async () => {
+                await this.index.initialize();
+                this.index.trigger("change"); // Update UI
+            };
             this.registerEvent(
-                this.app.metadataCache.on("resolved", async () => {
-                    console.log("Orbit: MetadataCache resolved, scanning vault...");
-                    await this.index.initialize();
-                    this.index.trigger("change"); // Update UI
-                })
+                this.app.metadataCache.on("resolved", resolvedHandler)
             );
         }
 
         // Also re-scan when workspace layout is ready (ensures cache is populated)
         this.app.workspace.onLayoutReady(async () => {
             if (this.index.getContacts().length === 0) {
-                console.log("Orbit: Layout ready, re-scanning vault...");
                 await this.index.scanVault();
                 this.index.trigger("change");
             }
@@ -116,7 +113,7 @@ export default class OrbitPlugin extends Plugin {
             },
         });
 
-        console.log("Orbit: Plugin loaded successfully!");
+        // Orbit loaded successfully
     }
 
     /**
@@ -187,7 +184,7 @@ export default class OrbitPlugin extends Plugin {
     }
 
     onunload() {
-        console.log("Orbit: Unloading plugin...");
+        // Cleanup handled by Obsidian's registerEvent
     }
 
     async loadSettings() {

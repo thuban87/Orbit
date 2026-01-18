@@ -20,6 +20,7 @@ export class OrbitIndex extends Events {
     private app: App;
     private settings: OrbitSettings;
     private contacts: Map<string, OrbitContact> = new Map();
+    private initialized = false;
 
     constructor(app: App, settings: OrbitSettings) {
         super();
@@ -29,11 +30,12 @@ export class OrbitIndex extends Events {
 
     /**
      * Initialize the index by scanning the vault.
+     * Only runs once - subsequent calls are ignored.
      */
     async initialize(): Promise<void> {
-        console.log("Orbit: Initializing contact index...");
+        if (this.initialized) return;
+        this.initialized = true;
         await this.scanVault();
-        console.log(`Orbit: Found ${this.contacts.size} contacts.`);
         await this.saveStateToDisk(); // Save initial state for AI agents
     }
 
