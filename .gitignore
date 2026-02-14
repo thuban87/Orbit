@@ -34,3 +34,4 @@ test-vault/
 
 # Agent files
 .agent/
+.claude/
