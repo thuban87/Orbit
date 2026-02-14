@@ -31,3 +31,6 @@ test-vault/
 
 # Sync files
 *.ffs_db
+
+# Agent files
+.agent/
