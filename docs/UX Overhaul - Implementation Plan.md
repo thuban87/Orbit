@@ -219,7 +219,7 @@ export class TFile {
 
 ---
 
-## Phase 1: Schema System & Form Modal Foundation
+## Phase 1: Schema System & Form Modal Foundation ✅
 
 **Goal:** Build the core infrastructure that all subsequent modals depend on, including the `ReactModal` base class.
 
@@ -371,7 +371,7 @@ interface SchemaDef {
 
 ---
 
-## Phase 1.5: Schema & Form Modal Tests
+## Phase 1.5: Schema & Form Modal Tests ✅
 
 **Goal:** ≥80% unit + integration coverage on Phase 1 code.
 

@@ -134,13 +134,32 @@ export class Plugin {
 
 // ─── UI Components ──────────────────────────────────────────────
 
+/**
+ * Polyfill Obsidian-specific HTMLElement methods for jsdom.
+ * Obsidian extends HTMLElement with helpers like empty(), setText(), addClass(), removeClass().
+ */
+function polyfillEl(el: HTMLElement): HTMLElement {
+    if (!(el as any)._obsidianPolyfilled) {
+        (el as any).empty = function () { this.innerHTML = ''; };
+        (el as any).setText = function (text: string) { this.textContent = text; };
+        (el as any).addClass = function (cls: string) { this.classList.add(cls); };
+        (el as any).removeClass = function (cls: string) { this.classList.remove(cls); };
+        (el as any)._obsidianPolyfilled = true;
+    }
+    return el;
+}
+
 export class Modal {
     app: any;
     contentEl: HTMLElement;
+    titleEl: HTMLElement;
+    modalEl: HTMLElement;
 
     constructor(app?: any) {
         this.app = app ?? createMockApp();
-        this.contentEl = document.createElement('div');
+        this.contentEl = polyfillEl(document.createElement('div'));
+        this.titleEl = polyfillEl(document.createElement('div'));
+        this.modalEl = polyfillEl(document.createElement('div'));
     }
 
     open(): void { }

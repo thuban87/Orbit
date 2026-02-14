@@ -3,6 +3,8 @@ import { OrbitSettingTab, OrbitSettings, DEFAULT_SETTINGS } from "./settings";
 import { OrbitIndex } from "./services/OrbitIndex";
 import { OrbitView, VIEW_TYPE_ORBIT } from "./views/OrbitView";
 import { LinkListener } from "./services/LinkListener";
+import { OrbitFormModal } from "./modals/OrbitFormModal";
+import type { SchemaDef } from "./schemas/types";
 
 export default class OrbitPlugin extends Plugin {
     settings: OrbitSettings;
@@ -110,6 +112,38 @@ export default class OrbitPlugin extends Plugin {
             name: "Weekly Digest",
             callback: async () => {
                 await this.generateWeeklyDigest();
+            },
+        });
+
+        // [TEMPORARY] Debug command to test form modal (remove in Phase 2)
+        this.addCommand({
+            id: "debug-form",
+            name: "Debug: Test Form Modal",
+            callback: () => {
+                const testSchema: SchemaDef = {
+                    id: "debug-test",
+                    title: "Test Form Modal",
+                    fields: [
+                        { key: "name", type: "text", label: "Name", placeholder: "Enter name", required: true },
+                        { key: "category", type: "dropdown", label: "Category", options: ["Family", "Friends", "Work", "Community"], required: true },
+                        { key: "frequency", type: "dropdown", label: "Frequency", options: ["Daily", "Weekly", "Monthly", "Quarterly", "Yearly"], default: "Monthly" },
+                        { key: "birthday", type: "date", label: "Birthday", layout: "half-width" },
+                        { key: "score", type: "number", label: "Priority Score", placeholder: "1-10", layout: "half-width" },
+                        { key: "active", type: "toggle", label: "Active Contact", default: true },
+                        { key: "photo", type: "photo", label: "Photo URL", placeholder: "https://...", description: "Paste a URL to the contact's photo" },
+                        { key: "notes", type: "textarea", label: "Notes", placeholder: "Add notes about this contact..." },
+                    ],
+                    submitLabel: "Create Test",
+                    cssClass: "orbit-debug-form",
+                };
+                const modal = new OrbitFormModal(
+                    this.app,
+                    testSchema,
+                    (data) => {
+                        console.log("Form submitted:", data);
+                    }
+                );
+                modal.open();
             },
         });
 

@@ -354,3 +354,134 @@
   font-size: 0.75rem;
   color: var(--text-muted);
 }
+
+/* ================================
+   Form Modal (Phase 1)
+   ================================ */
+.orbit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 8px 0;
+}
+
+.orbit-form__fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* ── Field Wrapper ─────────────────────────── */
+.orbit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.orbit-field--full-width {
+  width: 100%;
+}
+
+.orbit-field--half-width {
+  width: calc(50% - 6px);
+  min-width: 180px;
+}
+
+.orbit-field--inline {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+/* ── Labels ────────────────────────────────── */
+.orbit-field__label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.orbit-field--required .orbit-field__label::after {
+  content: ' *';
+  color: var(--orbit-decay, #ef4444);
+}
+
+/* ── Inputs ────────────────────────────────── */
+.orbit-field__input,
+.orbit-field__textarea,
+.orbit-field__select {
+  width: 100%;
+  padding: 6px 10px;
+  font-size: 0.9rem;
+  color: var(--text-normal);
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  transition: border-color 0.15s ease;
+}
+
+.orbit-field__input:focus,
+.orbit-field__textarea:focus,
+.orbit-field__select:focus {
+  outline: none;
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb, 124, 77, 255), 0.15);
+}
+
+.orbit-field__textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* ── Toggle ────────────────────────────────── */
+.orbit-field__toggle-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.orbit-field__toggle {
+  accent-color: var(--interactive-accent);
+}
+
+.orbit-field__toggle-label {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+/* ── Description / Help Text ───────────────── */
+.orbit-field__description {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.3;
+}
+
+/* ── Form Actions ──────────────────────────── */
+.orbit-form__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.orbit-button--primary {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border-color: var(--interactive-accent);
+}
+
+.orbit-button--primary:hover {
+  filter: brightness(1.1);
+}
+
+/* ── Error Boundary Fallback ───────────────── */
+.orbit-error {
+  padding: 16px;
+  color: var(--text-error, #ef4444);
+  background: var(--background-secondary);
+  border: 1px solid var(--text-error, #ef4444);
+  border-radius: 6px;
+  font-size: 0.9rem;
+}

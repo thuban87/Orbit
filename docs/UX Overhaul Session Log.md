@@ -100,31 +100,110 @@ Each session entry should include:
 
 ---
 
+## 2026-02-14 - Phase 1 & 1.5: Schema System, Form Modal Foundation & Tests
+
+**Focus:** Build schema-driven form modal infrastructure and comprehensive test coverage
+
+### Completed:
+
+#### Source Files (7 new)
+- ✅ `src/utils/logger.ts` — Gated `Logger` utility (off/error/warn/debug)
+- ✅ `src/utils/dates.ts` — `formatLocalDate()` to fix UTC off-by-one bug
+- ✅ `src/utils/paths.ts` — `sanitizeFileName()`, `buildContactPath()`
+- ✅ `src/schemas/types.ts` — `FieldDef`, `SchemaDef` interfaces + `isFieldDef`/`isSchemaDef` type guards
+- ✅ `src/modals/ReactModal.ts` — Abstract base modal with React lifecycle + `ModalErrorBoundary`
+- ✅ `src/modals/OrbitFormModal.ts` — Schema-driven form modal extending `ReactModal`
+- ✅ `src/components/FormRenderer.tsx` — React form component supporting all 7 field types
+
+#### Modified Files (4)
+- ✅ `styles.css` — +131 lines for form modal styling (fields, inputs, toggles, error boundary)
+- ✅ `src/main.ts` — Added temporary `debug-form` command (remove in Phase 2)
+- ✅ `test/mocks/obsidian.ts` — Added `polyfillEl()` for `empty`/`setText`/`addClass`/`removeClass`, `titleEl`, `modalEl`
+- ✅ `vitest.config.ts` — Added `.tsx` to test include pattern
+
+#### Test Files (9 new, 120 tests)
+- ✅ `test/unit/utils/dates.test.ts` — 7 tests
+- ✅ `test/unit/utils/paths.test.ts` — 18 tests
+- ✅ `test/unit/utils/logger.test.ts` — 17 tests
+- ✅ `test/unit/schemas/types.test.ts` — 26 tests
+- ✅ `test/unit/modals/react-modal.test.ts` — 7 tests
+- ✅ `test/unit/modals/error-boundary.test.tsx` — 4 tests
+- ✅ `test/unit/modals/orbit-form-modal.test.ts` — 8 tests
+- ✅ `test/unit/components/form-renderer.test.tsx` — 27 tests
+- ✅ `test/integration/form-modal-flow.test.tsx` — 6 tests
+
+### Files Changed:
+
+**New Files (16):**
+- `src/utils/logger.ts`, `src/utils/dates.ts`, `src/utils/paths.ts`
+- `src/schemas/types.ts`
+- `src/modals/ReactModal.ts`, `src/modals/OrbitFormModal.ts`
+- `src/components/FormRenderer.tsx`
+- `test/unit/utils/dates.test.ts`, `test/unit/utils/paths.test.ts`, `test/unit/utils/logger.test.ts`
+- `test/unit/schemas/types.test.ts`
+- `test/unit/modals/react-modal.test.ts`, `test/unit/modals/error-boundary.test.tsx`, `test/unit/modals/orbit-form-modal.test.ts`
+- `test/unit/components/form-renderer.test.tsx`
+- `test/integration/form-modal-flow.test.tsx`
+
+**Modified Files (4):**
+- `styles.css` — Form modal CSS (+131 lines)
+- `src/main.ts` — Debug command import + registration
+- `test/mocks/obsidian.ts` — Modal mock enhancements
+- `vitest.config.ts` — `.tsx` include pattern
+
+### Testing Notes:
+
+| Metric | Result |
+|--------|--------|
+| Test suites | 12/12 passed |
+| Tests | 219/219 passed (99 existing + 120 new) |
+| Build | ✅ Clean |
+| Deploy | ✅ Test vault |
+
+**Coverage (Phase 1 files):**
+
+| File | Stmts | Branch | Lines | Target |
+|------|-------|--------|-------|--------|
+| `ReactModal.ts` | 100% | 100% | 100% | ✅ ≥80% |
+| `FormRenderer.tsx` | 97% | 88% | 97% | ✅ ≥80% |
+| `schemas/types.ts` | 100% | 100% | 100% | ✅ ≥80% |
+| `dates.ts` | 100% | 100% | 100% | ✅ ≥80% |
+| `logger.ts` | 100% | 100% | 100% | ✅ ≥80% |
+| `paths.ts` | 100% | 100% | 100% | ✅ ≥80% |
+
+### Bugs Found:
+- None
+
+### Blockers/Issues:
+- None
+
+---
+
 ## Next Session Prompt
 
 ```
-Phase 0 (Test Infrastructure) complete. Ready to begin Phase 1.
+Phase 1 + 1.5 complete. Ready to begin Phase 2: ContactManager Service & New Person Modal.
 
 What was done last session:
-- ✅ vitest fully configured with Obsidian mocks and CI/local coverage output
-- ✅ 99 baseline tests passing across types.ts, OrbitIndex.ts, LinkListener.ts
-- ✅ Coverage exceeds 80% on all Phase 0 target files
-- ✅ GitHub Actions workflow created for PR test checks
-- ✅ UTC date bug flagged in source for Phase 1 fix
+- ✅ 7 new source files: ReactModal, OrbitFormModal, FormRenderer, schema types, utilities
+- ✅ 9 new test files with 120 tests (219 total, all passing)
+- ✅ Coverage ≥97% on all new Phase 1 files
+- ✅ Form modal styling complete (131 CSS lines)
+- ✅ Temporary debug-form command available for manual testing
+- ✅ Deployed and verified in test vault
 
-Continue with Phase 1: Schema System & Form Modal Foundation
+Continue with Phase 2: ContactManager Service & New Person Modal
 Key deliverables:
-- ReactModal base class with ErrorBoundary
-- schemas/types.ts (FieldDef, SchemaDef)
-- OrbitFormModal + FormRenderer
-- utils/dates.ts (formatLocalDate — replaces toISOString bug)
-- utils/paths.ts (sanitizeFileName, buildContactPath)
-- utils/logger.ts (gated logging)
+- ContactManager service (create, update, delete contacts)
+- newPersonSchema definition
+- Wire OrbitFormModal to ContactManager for creating contacts
+- Remove temporary debug-form command from Phase 1
 
 Key files to reference:
 - docs/UX Overhaul - Implementation Plan.md — Full phase details
-- test/helpers/factories.ts — Factory pattern to extend for new types
-- vitest.config.ts — Test configuration
+- src/schemas/types.ts — FieldDef/SchemaDef interfaces to build schemas with
+- src/modals/OrbitFormModal.ts — Form modal to wire to ContactManager
+- src/components/FormRenderer.tsx — All supported field types
 ```
 
 ---
@@ -132,27 +211,30 @@ Key files to reference:
 ## Git Commit Message
 
 ```
-feat(test): Phase 0 — test infrastructure & baseline tests
+feat(modal): Phase 1 + 1.5 — schema system, form modal foundation & tests
 
-Test Infrastructure:
-- Install vitest, @testing-library/react, jsdom, @vitest/coverage-v8
-- Add vitest.config.ts with jsdom env, obsidian mock alias, v8 coverage
-- Add CI/local coverage output paths (timestamped local, standard CI)
-- Add GitHub Actions workflow for test + coverage on PRs
-- Add test/setup.ts, test/mocks/, test/helpers/factories.ts
+Source Files (7 new):
+- Add ReactModal base class with ErrorBoundary and React lifecycle management
+- Add OrbitFormModal for schema-driven form rendering
+- Add FormRenderer React component supporting 7 field types with layout hints
+- Add FieldDef/SchemaDef interfaces with isFieldDef/isSchemaDef type guards
+- Add Logger utility with severity-gated output (off/error/warn/debug)
+- Add formatLocalDate utility to fix UTC off-by-one date bug
+- Add sanitizeFileName and buildContactPath path utilities
 
-Baseline Tests (99 total):
-- types.test.ts: 34 tests — all 5 utility functions
-- orbit-index.test.ts: 42 tests — vault scanning, file events, dumpIndex
-- link-listener.test.ts: 23 tests — wikilinks, prompting, date updates
+Modified Files (4):
+- Add 131 lines of form modal CSS to styles.css
+- Add temporary debug-form command to main.ts
+- Enhance Modal mock with polyfillEl, titleEl, modalEl
+- Add .tsx to vitest include pattern
 
-Coverage:
-- types.ts: 97% stmts / 90% branch / 97% lines
-- OrbitIndex.ts: 100% stmts / 88% branch / 100% lines
-- LinkListener.ts: 87% stmts / 80% branch / 87% lines
+Tests (9 new files, 120 tests):
+- dates.test.ts (7), paths.test.ts (18), logger.test.ts (17)
+- schemas/types.test.ts (26)
+- react-modal.test.ts (7), error-boundary.test.tsx (4), orbit-form-modal.test.ts (8)
+- form-renderer.test.tsx (27), form-modal-flow.test.tsx (6)
 
-Bug Flags:
-- Flagged UTC toISOString() off-by-one in 4 locations (Phase 1 fix)
-
-Scripts: npm test, npm run test:watch, npm run test:coverage
+Coverage: ReactModal 100%, FormRenderer 97%, schemas/types 100%, all utils 100%
+Total: 219 tests passing (99 existing + 120 new)
 ```
+

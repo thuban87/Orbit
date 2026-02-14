@@ -128,8 +128,8 @@ tags:
 > **Session Log:** [[UX Overhaul Session Log]]
 
 - [x] Phase 0 — Test Infrastructure & Baseline Tests
-- [ ] Phase 1 — Schema System & Form Modal Foundation
-- [ ] Phase 1.5 — Schema & Form Modal Tests
+- [x] Phase 1 — Schema System & Form Modal Foundation
+- [x] Phase 1.5 — Schema & Form Modal Tests
 - [ ] Phase 2 — ContactManager Service & New Person Modal
 - [ ] Phase 2.5 — ContactManager & New Person Tests
 - [ ] Phase 3 — Contact Picker Modal
