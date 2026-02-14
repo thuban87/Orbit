@@ -3,7 +3,8 @@
  * Copies built files to the target Obsidian vault plugins directory.
  *
  * Usage:
- *   node deploy.mjs test        → Deploy to staging vault
+ *   node deploy.mjs test        → Deploy to test vault
+ *   node deploy.mjs staging     → Deploy to staging vault
  *   node deploy.mjs production  → Deploy to production vault (requires confirmation)
  */
 
@@ -13,7 +14,8 @@ import { createInterface } from "readline";
 
 // Deploy targets
 const TARGETS = {
-    test: "C:\\Quest-Board-Staging-Vault\\Staging Vault\\.obsidian\\plugins\\orbit",
+    test: "C:\\Quest-Board-Test-Vault\\.obsidian\\plugins\\orbit",
+    staging: "C:\\Quest-Board-Staging-Vault\\Staging Vault\\.obsidian\\plugins\\orbit",
     production: "G:\\My Drive\\IT\\Obsidian Vault\\My Notebooks\\.obsidian\\plugins\\orbit",
 };
 
@@ -24,8 +26,9 @@ const FILES_TO_COPY = ["main.js", "manifest.json", "styles.css"];
 const target = process.argv[2];
 
 if (!target || !TARGETS[target]) {
-    console.error("❌ Usage: node deploy.mjs <test|production>");
-    console.error("   test       → Deploy to staging vault");
+    console.error("❌ Usage: node deploy.mjs <test|staging|production>");
+    console.error("   test       → Deploy to test vault");
+    console.error("   staging    → Deploy to staging vault");
     console.error("   production → Deploy to production vault (requires confirmation)");
     process.exit(1);
 }

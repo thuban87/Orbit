@@ -32,6 +32,9 @@ test-vault/
 # Sync files
 *.ffs_db
 
+# Test coverage
+coverage/
+
 # Agent files
 .agent/
 .claude/

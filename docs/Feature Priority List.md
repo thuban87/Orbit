@@ -7,8 +7,8 @@ tags:
 ---
 # Orbit - Feature Priority List
 
-**Last Updated:** January 9, 2026
-**Version:** 0.0.0 (Pre-Development)
+**Last Updated:** February 14, 2026
+**Version:** 0.1.0
 
 ---
 
@@ -118,3 +118,32 @@ tags:
 *   **Phase 5:** ~3 hours
 *   **Phase 6:** ~11 hours
 *   **Total:** ~44 hours
+
+---
+
+## UX Overhaul Project
+
+> **Started:** 2026-02-14
+> **Full Details:** [[UX Overhaul - Implementation Plan]]
+> **Session Log:** [[UX Overhaul Session Log]]
+
+- [x] Phase 0 — Test Infrastructure & Baseline Tests
+- [ ] Phase 1 — Schema System & Form Modal Foundation
+- [ ] Phase 1.5 — Schema & Form Modal Tests
+- [ ] Phase 2 — ContactManager Service & New Person Modal
+- [ ] Phase 2.5 — ContactManager & New Person Tests
+- [ ] Phase 3 — Contact Picker Modal
+- [ ] Phase 3.5 — Contact Picker Tests
+- [ ] Phase 4 — Update Contacts Flow
+- [ ] Phase 4.5 — Update Contacts Tests
+- [ ] Phase 5 — Edit Person & Update This Person
+- [ ] Phase 5.5 — Edit & Update This Person Tests
+- [ ] Phase 6 — User Schema System
+- [ ] Phase 6.5 — User Schema System Tests
+- [ ] Phase 7 — AI Provider Architecture
+- [ ] Phase 7.5 — AI Provider Tests
+- [ ] Phase 8 — AI Message Suggest Feature
+- [ ] Phase 8.5 — AI Message Suggest Tests
+- [ ] Phase 9 — Debug Logging System
+- [ ] Phase 9.5 — Debug Logging Tests
+- [ ] Phase 10 — Polish, Integration & Final Settings

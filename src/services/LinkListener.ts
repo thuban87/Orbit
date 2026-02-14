@@ -144,6 +144,8 @@ export class LinkListener {
      */
     private async updateContactDate(contact: OrbitContact): Promise<void> {
         const today = new Date();
+        // BUG: toISOString() returns UTC date, which can differ from local date
+        // near midnight boundaries, causing off-by-one errors. Fix in Phase 1.
         const dateStr = today.toISOString().split("T")[0]; // YYYY-MM-DD
 
         try {

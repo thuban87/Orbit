@@ -233,6 +233,7 @@ export class OrbitIndex extends Events {
         console.log("------------------------");
 
         for (const contact of this.getContactsByStatus()) {
+            // BUG: toISOString() returns UTC — off-by-one near midnight. Fix in Phase 1.
             const lastContactStr = contact.lastContact
                 ? contact.lastContact.toISOString().split("T")[0]
                 : "Never";
@@ -262,6 +263,7 @@ Photo: ${contact.photo ? "✓" : "✗"}
                 filePath: contact.file.path,
                 category: contact.category || null,
                 frequency: contact.frequency,
+                // BUG: toISOString() returns UTC — off-by-one near midnight. Fix in Phase 1.
                 lastContact: contact.lastContact
                     ? contact.lastContact.toISOString().split("T")[0]
                     : null,
@@ -276,6 +278,7 @@ Photo: ${contact.photo ? "✓" : "✗"}
                         : contact.daysUntilDue,
                 socialBattery: contact.socialBattery || null,
                 photo: contact.photo || null,
+                // BUG: toISOString() returns UTC — off-by-one near midnight. Fix in Phase 1.
                 snoozeUntil: contact.snoozeUntil
                     ? contact.snoozeUntil.toISOString().split("T")[0]
                     : null,

@@ -4,7 +4,7 @@ tags:
   - orbit
   - implementation
 created: 2026-02-13
-status: planning
+status: in-progress
 ---
 # Orbit UX Overhaul — Implementation Plan
 
@@ -140,7 +140,7 @@ src/
 
 ---
 
-## Phase 0: Test Infrastructure & Baseline Tests
+## Phase 0: Test Infrastructure & Baseline Tests ✅
 
 **Goal:** Set up vitest with Obsidian API mocks and write baseline tests for the most important existing code.
 

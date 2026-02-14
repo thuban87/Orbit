@@ -19,6 +19,7 @@ tags:
 
 **Environments:**
 - **Dev:** `C:\Users\bwales\projects\obsidian-plugins\orbit`
+- **Test:** `C:\Quest-Board-Test-Vault\.obsidian\plugins\orbit`
 - **Staging:** `C:\Quest-Board-Staging-Vault\Staging Vault\.obsidian\plugins\orbit`
 - **Production:** `G:\My Drive\IT\Obsidian Vault\My Notebooks\.obsidian\plugins\orbit`
 
@@ -129,10 +130,11 @@ docs/
 |--------|---------|
 | `npm run dev` | Watch mode — builds on change |
 | `npm run build` | Production build |
-| `npm run deploy:test` | Build + deploy to staging vault |
+| `npm run deploy:test` | Build + deploy to test vault |
+| `npm run deploy:staging` | Build + deploy to staging vault |
 | `npm run deploy:production` | Build + deploy to production vault (**requires confirmation**) |
-| `npm run test` | Run test suite (vitest) — *coming soon, see Phase 0 of UX Overhaul plan* |
-| `npm run test:coverage` | Run with coverage report — *coming soon* |
+| `npm run test` | Run test suite (vitest) |
+| `npm run test:coverage` | Run with coverage report |
 
 ---
 
