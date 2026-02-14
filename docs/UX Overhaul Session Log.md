@@ -179,62 +179,121 @@ Each session entry should include:
 
 ---
 
+## 2026-02-14 - Phase 2 & 2.5: ContactManager Service, New Person Modal & Tests
+
+**Focus:** Build ContactManager service, new-person schema, FolderSuggest, wire "New Person" command, then comprehensive tests
+
+### Completed:
+
+#### Source Files (4 new, 5 modified)
+- ✅ `src/services/ContactManager.ts` — **NEW** — `createContact`, `updateFrontmatter`, `appendToInteractionLog`
+- ✅ `src/schemas/new-person.schema.ts` — **NEW** — 7-field schema definition
+- ✅ `src/utils/FolderSuggest.ts` — **NEW** — Folder autocomplete for settings
+- ✅ `src/components/FormRenderer.tsx` — **MODIFIED** — Photo field with live image preview
+- ✅ `src/settings.ts` — **MODIFIED** — Added `templatePath`, `contactsFolder` + FolderSuggest
+- ✅ `src/services/OrbitIndex.ts` — **MODIFIED** — `contactsFolder` targeted scanning
+- ✅ `src/main.ts` — **MODIFIED** — `new-person` command replaces `debug-form`
+- ✅ `styles.css` — **MODIFIED** — Photo preview CSS
+
+#### Bug Fixes
+- 🐛 FolderSuggest crash on selection (inputEl stored in private field)
+- 🐛 Tag always from `settings.personTag` via `processFrontMatter()`
+- 🐛 Templater syntax stripped from frontmatter (body-only template)
+- 🐛 All form data values reach frontmatter programmatically
+- 🐛 ENOENT fixed with `ensureFolderExists` before `vault.create()`
+
+#### Test Files (3 new, 1 modified — 54 new tests)
+- ✅ `test/unit/services/contact-manager.test.ts` — **NEW** — 28 tests
+- ✅ `test/unit/schemas/new-person-schema.test.ts` — **NEW** — 15 tests
+- ✅ `test/unit/utils/folder-suggest.test.ts` — **NEW** — 8 tests
+- ✅ `test/unit/orbit-index.test.ts` — **MODIFIED** — +3 contactsFolder tests
+
+### Testing Notes:
+
+| Metric | Result |
+|--------|--------|
+| Test suites | 15/15 passed |
+| Tests | 273/273 passed (219 existing + 54 new) |
+| Build | ✅ Clean |
+| Deploy | ✅ Test vault |
+| Manual | ✅ Brad verified all frontmatter, folder paths, photo display |
+
+**Coverage (Phase 2 files):**
+
+| File | Stmts | Branch | Lines |
+|------|-------|--------|-------|
+| `ContactManager.ts` | 98.52% | 88.88% | 100% |
+| `new-person.schema.ts` | 100% | 100% | 100% |
+| `FolderSuggest.ts` | 100% | 83.33% | 100% |
+| `OrbitIndex.ts` | 98.16% | 85.89% | 98.01% |
+
+### Bugs Found:
+- All 5 bugs listed above — found and fixed in same session
+
+### Blockers/Issues:
+- None
+
+---
+
 ## Next Session Prompt
 
 ```
-Phase 1 + 1.5 complete. Ready to begin Phase 2: ContactManager Service & New Person Modal.
+Phase 2 + 2.5 complete. Ready to begin Phase 3: Contact Picker Modal.
 
 What was done last session:
-- ✅ 7 new source files: ReactModal, OrbitFormModal, FormRenderer, schema types, utilities
-- ✅ 9 new test files with 120 tests (219 total, all passing)
-- ✅ Coverage ≥97% on all new Phase 1 files
-- ✅ Form modal styling complete (131 CSS lines)
-- ✅ Temporary debug-form command available for manual testing
-- ✅ Deployed and verified in test vault
+- ✅ ContactManager service (createContact, updateFrontmatter, appendToInteractionLog)
+- ✅ New Person schema, FolderSuggest, photo preview
+- ✅ "New Person" command wired end-to-end
+- ✅ 5 bugs fixed, 54 new tests (273 total), coverage ≥80% on all Phase 2 files
+- ✅ Deployed and manually verified in test vault
 
-Continue with Phase 2: ContactManager Service & New Person Modal
-Key deliverables:
-- ContactManager service (create, update, delete contacts)
-- newPersonSchema definition
-- Wire OrbitFormModal to ContactManager for creating contacts
-- Remove temporary debug-form command from Phase 1
-
+Continue with Phase 3: Contact Picker Modal
 Key files to reference:
-- docs/UX Overhaul - Implementation Plan.md — Full phase details
-- src/schemas/types.ts — FieldDef/SchemaDef interfaces to build schemas with
-- src/modals/OrbitFormModal.ts — Form modal to wire to ContactManager
-- src/components/FormRenderer.tsx — All supported field types
+- docs/UX Overhaul - Implementation Plan.md
+- src/services/ContactManager.ts
+- src/modals/OrbitFormModal.ts
+- src/services/OrbitIndex.ts
 ```
 
 ---
 
-## Git Commit Message
+## Git Commit Messages
 
+### Phase 0
 ```
-feat(modal): Phase 1 + 1.5 — schema system, form modal foundation & tests
-
-Source Files (7 new):
-- Add ReactModal base class with ErrorBoundary and React lifecycle management
-- Add OrbitFormModal for schema-driven form rendering
-- Add FormRenderer React component supporting 7 field types with layout hints
-- Add FieldDef/SchemaDef interfaces with isFieldDef/isSchemaDef type guards
-- Add Logger utility with severity-gated output (off/error/warn/debug)
-- Add formatLocalDate utility to fix UTC off-by-one date bug
-- Add sanitizeFileName and buildContactPath path utilities
-
-Modified Files (4):
-- Add 131 lines of form modal CSS to styles.css
-- Add temporary debug-form command to main.ts
-- Enhance Modal mock with polyfillEl, titleEl, modalEl
-- Add .tsx to vitest include pattern
-
-Tests (9 new files, 120 tests):
-- dates.test.ts (7), paths.test.ts (18), logger.test.ts (17)
-- schemas/types.test.ts (26)
-- react-modal.test.ts (7), error-boundary.test.tsx (4), orbit-form-modal.test.ts (8)
-- form-renderer.test.tsx (27), form-modal-flow.test.tsx (6)
-
-Coverage: ReactModal 100%, FormRenderer 97%, schemas/types 100%, all utils 100%
-Total: 219 tests passing (99 existing + 120 new)
+feat(test): Phase 0 — test infrastructure & baseline tests (99 tests)
 ```
+
+### Phase 1 + 1.5
+```
+feat(modal): Phase 1 + 1.5 — schema system, form modal foundation & tests (120 tests)
+```
+
+### Phase 2 + 2.5
+```
+feat(contacts): Phase 2 + 2.5 — ContactManager service, New Person modal & tests
+
+ContactManager Service:
+- createContact with template loading, processFrontMatter, folder creation
+- updateFrontmatter (merge-only), appendToInteractionLog (atomic)
+- stripFrontmatter, ensureFolderExists helpers
+
+New Person Flow:
+- 7-field schema, FolderSuggest autocomplete, photo preview
+- "New Person" command replaces debug-form command
+- contactsFolder targeted scanning in OrbitIndex
+
+Bug Fixes:
+- FolderSuggest crash, tag override, Templater syntax, missing frontmatter, ENOENT
+
+Tests (54 new, 273 total):
+- contact-manager.test.ts (28), new-person-schema.test.ts (15)
+- folder-suggest.test.ts (8), orbit-index.test.ts (+3)
+
+Coverage: ContactManager 98.5%, schema 100%, FolderSuggest 100%, OrbitIndex 98%
+```
+
+
+
+
 

@@ -67,6 +67,8 @@ export function createSettings(overrides: Partial<OrbitSettings> = {}): OrbitSet
         personTag: overrides.personTag ?? 'people',
         ignoredPaths: overrides.ignoredPaths ?? ['Templates', 'Archive'],
         dateFormat: overrides.dateFormat ?? 'YYYY-MM-DD',
+        templatePath: overrides.templatePath ?? 'System/Templates/Person Template.md',
+        contactsFolder: overrides.contactsFolder ?? '',
     };
 }
 

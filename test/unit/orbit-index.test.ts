@@ -140,6 +140,58 @@ describe('OrbitIndex - scanVault', () => {
         await index.scanVault();
         expect(index.getContacts()).toHaveLength(0);
     });
+
+    // ── contactsFolder targeted scanning ────────────────────────
+
+    it('uses targeted scan when contactsFolder is set and folder exists', async () => {
+        const settings = createSettings({ contactsFolder: 'People' });
+        const { file, cache } = createPersonFile('Alice');
+        const cacheMap = new Map<TFile, CachedMetadata>([[file, cache]]);
+
+        const { index, app } = setupIndex({ files: [file], cacheMap, settings });
+
+        // Mock folder lookup — return a folder with the file inside
+        const { TFolder: TFolderClass } = await import('../mocks/obsidian');
+        const folder = new TFolderClass('People');
+        folder.children = [file];
+        app.vault.getFolderByPath.mockReturnValue(folder);
+
+        await index.scanVault();
+
+        // Should NOT call getMarkdownFiles (full vault scan)
+        expect(app.vault.getMarkdownFiles).not.toHaveBeenCalled();
+        expect(index.getContacts()).toHaveLength(1);
+    });
+
+    it('falls back to full vault scan when contactsFolder does not exist', async () => {
+        const settings = createSettings({ contactsFolder: 'NonExistent' });
+        const { file, cache } = createPersonFile('Alice');
+        const cacheMap = new Map<TFile, CachedMetadata>([[file, cache]]);
+
+        const { index, app } = setupIndex({ files: [file], cacheMap, settings });
+
+        // Folder not found
+        app.vault.getFolderByPath.mockReturnValue(null);
+
+        await index.scanVault();
+
+        // Should fall back to getMarkdownFiles
+        expect(app.vault.getMarkdownFiles).toHaveBeenCalled();
+    });
+
+    it('uses full vault scan when contactsFolder is empty', async () => {
+        const settings = createSettings({ contactsFolder: '' });
+        const { file, cache } = createPersonFile('Alice');
+        const cacheMap = new Map<TFile, CachedMetadata>([[file, cache]]);
+
+        const { index, app } = setupIndex({ files: [file], cacheMap, settings });
+
+        await index.scanVault();
+
+        // Should use getMarkdownFiles (default behavior)
+        expect(app.vault.getMarkdownFiles).toHaveBeenCalled();
+        expect(index.getContacts()).toHaveLength(1);
+    });
 });
 
 // ═══════════════════════════════════════════════════════════════

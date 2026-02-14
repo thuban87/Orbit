@@ -399,7 +399,7 @@ interface SchemaDef {
 
 ---
 
-## Phase 2: ContactManager Service & New Person Modal
+## Phase 2: ContactManager Service & New Person Modal ✅
 
 **Goal:** Ship the "New Person" workflow — the highest-value friction removal.
 
@@ -478,7 +478,7 @@ interface SchemaDef {
 
 ---
 
-## Phase 2.5: ContactManager & New Person Tests
+## Phase 2.5: ContactManager & New Person Tests ✅
 
 **Goal:** ≥80% unit + integration coverage on Phase 2 code.
 

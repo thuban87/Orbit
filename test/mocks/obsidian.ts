@@ -89,6 +89,9 @@ export function createMockApp(overrides: {
                 exists: vi.fn(async () => false),
             },
             getFolderByPath: vi.fn(() => null),
+            getAbstractFileByPath: vi.fn(() => null),
+            createFolder: vi.fn(async () => { }),
+            getRoot: vi.fn(() => new TFolder('')),
             on: vi.fn(),
         },
         metadataCache: {
@@ -302,4 +305,20 @@ export function debounce<T extends (...args: any[]) => any>(
 /** Identity function — in real Obsidian, normalizes path separators. */
 export function normalizePath(path: string): string {
     return path;
+}
+
+/** Mock AbstractInputSuggest for FolderSuggest. */
+export class AbstractInputSuggest<T> {
+    app: any;
+    protected inputEl: HTMLInputElement;
+
+    constructor(app: any, inputEl: HTMLInputElement) {
+        this.app = app;
+        this.inputEl = inputEl;
+    }
+
+    close(): void { }
+    getSuggestions(_query: string): T[] { return []; }
+    renderSuggestion(_value: T, _el: HTMLElement): void { }
+    selectSuggestion(_value: T): void { }
 }

@@ -1,4 +1,4 @@
-import { App, TFile, CachedMetadata, Events } from "obsidian";
+import { App, TFile, TFolder, CachedMetadata, Events } from "obsidian";
 import { OrbitSettings } from "../settings";
 import {
     OrbitContact,
@@ -9,6 +9,7 @@ import {
     parseDate,
     isValidFrequency,
 } from "../types";
+import { Logger } from "../utils/logger";
 
 /**
  * OrbitIndex - The "Radar"
@@ -40,12 +41,30 @@ export class OrbitIndex extends Events {
     }
 
     /**
-     * Scan the entire vault for person files.
-     * Public so it can be called after settings changes.
+     * Scan the vault for person files.
+     *
+     * When `contactsFolder` is set, uses targeted scanning via getFolderByPath().
+     * When empty, falls back to full vault scan via getMarkdownFiles().
      */
     async scanVault(): Promise<void> {
         this.contacts.clear();
-        const files = this.app.vault.getMarkdownFiles();
+
+        let files: TFile[];
+
+        if (this.settings.contactsFolder) {
+            // Targeted scan — only look in the specified folder
+            const folder = this.app.vault.getFolderByPath(this.settings.contactsFolder);
+            if (folder) {
+                files = this.getFilesFromFolder(folder);
+                Logger.debug('OrbitIndex', `Targeted scan: ${files.length} files in "${this.settings.contactsFolder}"`);
+            } else {
+                Logger.warn('OrbitIndex', `Contacts folder "${this.settings.contactsFolder}" not found, falling back to full vault scan`);
+                files = this.app.vault.getMarkdownFiles();
+            }
+        } else {
+            // Full vault scan (original behavior)
+            files = this.app.vault.getMarkdownFiles();
+        }
 
         for (const file of files) {
             if (this.isIgnoredPath(file.path)) continue;
@@ -55,6 +74,21 @@ export class OrbitIndex extends Events {
                 this.contacts.set(file.path, contact);
             }
         }
+    }
+
+    /**
+     * Recursively collect all markdown files from a folder.
+     */
+    private getFilesFromFolder(folder: TFolder): TFile[] {
+        const files: TFile[] = [];
+        for (const child of folder.children) {
+            if (child instanceof TFile && child.extension === 'md') {
+                files.push(child);
+            } else if (child instanceof TFolder) {
+                files.push(...this.getFilesFromFolder(child));
+            }
+        }
+        return files;
     }
 
     /**

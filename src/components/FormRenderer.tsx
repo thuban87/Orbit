@@ -124,17 +124,40 @@ function renderField(
             );
 
         case 'photo':
-            // Phase 1: basic text input. Phase 2 adds live image preview.
             return (
-                <input
-                    id={fieldId}
-                    className="orbit-field__input"
-                    type="url"
-                    value={value ?? ''}
-                    placeholder={field.placeholder ?? 'https://...'}
-                    required={field.required ?? false}
-                    onChange={(e) => onChange(field.key, e.target.value)}
-                />
+                <div className="orbit-field__photo-container">
+                    <input
+                        id={fieldId}
+                        className="orbit-field__input"
+                        type="url"
+                        value={value ?? ''}
+                        placeholder={field.placeholder ?? 'https://...'}
+                        required={field.required ?? false}
+                        onChange={(e) => onChange(field.key, e.target.value)}
+                    />
+                    {value && (
+                        <div className="orbit-field__photo-preview">
+                            <img
+                                src={value}
+                                alt="Photo preview"
+                                className="orbit-field__photo-img"
+                                onError={(e) => {
+                                    (e.target as HTMLImageElement).style.display = 'none';
+                                    const errorEl = (e.target as HTMLImageElement).nextElementSibling;
+                                    if (errorEl) (errorEl as HTMLElement).style.display = 'block';
+                                }}
+                                onLoad={(e) => {
+                                    (e.target as HTMLImageElement).style.display = 'block';
+                                    const errorEl = (e.target as HTMLImageElement).nextElementSibling;
+                                    if (errorEl) (errorEl as HTMLElement).style.display = 'none';
+                                }}
+                            />
+                            <span className="orbit-field__photo-error" style={{ display: 'none' }}>
+                                Could not load image
+                            </span>
+                        </div>
+                    )}
+                </div>
             );
 
         case 'text':

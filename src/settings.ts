@@ -1,5 +1,6 @@
 import { App, PluginSettingTab, Setting } from "obsidian";
 import OrbitPlugin from "./main";
+import { FolderSuggest } from "./utils/FolderSuggest";
 
 export interface OrbitSettings {
     /** The tag used to identify Person notes (e.g., "person" for #person) */
@@ -8,12 +9,18 @@ export interface OrbitSettings {
     ignoredPaths: string[];
     /** Date format for parsing last_contact (default: YYYY-MM-DD) */
     dateFormat: string;
+    /** Path to the person template file in the vault */
+    templatePath: string;
+    /** Folder to scan for contacts (empty = full vault) */
+    contactsFolder: string;
 }
 
 export const DEFAULT_SETTINGS: OrbitSettings = {
     personTag: "people",
     ignoredPaths: ["Templates", "Archive"],
     dateFormat: "YYYY-MM-DD",
+    templatePath: "System/Templates/Person Template.md",
+    contactsFolder: "",
 };
 
 export class OrbitSettingTab extends PluginSettingTab {
@@ -77,6 +84,42 @@ export class OrbitSettingTab extends PluginSettingTab {
                     .setValue(this.plugin.settings.dateFormat)
                     .onChange(async (value) => {
                         this.plugin.settings.dateFormat = value.trim() || "YYYY-MM-DD";
+                        await this.plugin.saveSettings();
+                    })
+            );
+
+        // ── Contacts Section ────────────────────────────────
+        new Setting(containerEl).setName("Contacts").setHeading();
+
+        // Contacts Folder setting
+        new Setting(containerEl)
+            .setName("Contacts folder")
+            .setDesc(
+                "Leave empty to scan entire vault. Setting a folder improves performance on large vaults."
+            )
+            .addText((text) => {
+                new FolderSuggest(this.app, text.inputEl);
+                text
+                    .setPlaceholder("People")
+                    .setValue(this.plugin.settings.contactsFolder)
+                    .onChange(async (value) => {
+                        this.plugin.settings.contactsFolder = value.trim();
+                        await this.plugin.saveSettings();
+                    });
+            });
+
+        // Template Path setting
+        new Setting(containerEl)
+            .setName("Person template")
+            .setDesc(
+                "Path to the template file used when creating new contacts."
+            )
+            .addText((text) =>
+                text
+                    .setPlaceholder("System/Templates/Person Template.md")
+                    .setValue(this.plugin.settings.templatePath)
+                    .onChange(async (value) => {
+                        this.plugin.settings.templatePath = value.trim();
                         await this.plugin.saveSettings();
                     })
             );

@@ -130,8 +130,8 @@ tags:
 - [x] Phase 0 — Test Infrastructure & Baseline Tests
 - [x] Phase 1 — Schema System & Form Modal Foundation
 - [x] Phase 1.5 — Schema & Form Modal Tests
-- [ ] Phase 2 — ContactManager Service & New Person Modal
-- [ ] Phase 2.5 — ContactManager & New Person Tests
+- [x] Phase 2 — ContactManager Service & New Person Modal (273 tests total)
+- [x] Phase 2.5 — ContactManager & New Person Tests (+54 tests)
 - [ ] Phase 3 — Contact Picker Modal
 - [ ] Phase 3.5 — Contact Picker Tests
 - [ ] Phase 4 — Update Contacts Flow
