@@ -36,5 +36,4 @@ test-vault/
 coverage/
 
 # Agent files
-.agent/
 .claude/

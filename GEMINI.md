@@ -237,3 +237,15 @@ Snoozed: snooze_until date is in the future
 - `docs/Project Summary.md` — Project overview
 - `docs/UX Overhaul - Implementation Plan.md` — Multi-phase overhaul with test infrastructure (Phase 0)
 - `docs/Orbit UX Overhaul - Brainstorm.md` — UX improvement ideas
+
+---
+
+## Workflows (MUST READ before executing)
+
+Workflow files live in `.agent/workflows/`. When the user requests any of the activities below, **you MUST read the workflow file FIRST before taking any action.** Do not rely on memory or rules above — the workflow file is the source of truth for these procedures.
+
+| Trigger | Workflow File | Description |
+|---------|--------------|-------------|
+| Session wrap-up, end of session, wrap up | `.agent/workflows/session-wrap-up.md` | End-of-session documentation updates and commit message |
+| Deploy, deployment, deploy to test/staging/production | `.agent/workflows/deploy.md` | Build and deploy to test, staging, or production environments |
+| Search, find in codebase, grep | `.agent/workflows/search.md` | Search the codebase using ripgrep or Select-String |
