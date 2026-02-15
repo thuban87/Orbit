@@ -19,6 +19,7 @@ import { ContactPickerGrid } from '../components/ContactPickerGrid';
 import { UpdatePanel } from '../components/UpdatePanel';
 import { OrbitProvider } from '../context/OrbitContext';
 import { newPersonSchema } from '../schemas/new-person.schema';
+import { editPersonSchema } from '../schemas/edit-person.schema';
 import { updateFrontmatter, appendToInteractionLog, createContact } from '../services/ContactManager';
 import { Logger } from '../utils/logger';
 import type { OrbitContact, LastInteractionType } from '../types';
@@ -94,6 +95,71 @@ export class OrbitHubModal extends ReactModal {
         this.view = 'updating';
         this.updateTitle();
         this.refresh();
+    }
+
+    /** Open edit form pre-filled with the selected contact's frontmatter */
+    private handleEdit(): void {
+        if (!this.selectedContact) return;
+        const contact = this.selectedContact;
+
+        // Build initial values from contact data + raw frontmatter
+        const cache = this.plugin.app.metadataCache.getFileCache(contact.file);
+        const fm = cache?.frontmatter ?? {};
+
+        const initialValues: Record<string, any> = {
+            name: contact.name,
+            category: contact.category ?? '',
+            frequency: contact.frequency ?? '',
+            social_battery: contact.socialBattery ?? '',
+            birthday: contact.birthday ?? '',
+            photo: contact.photo ?? '',
+            contact_link: fm.contact_link ?? '',
+        };
+
+        const modal = new OrbitFormModal(
+            this.plugin.app,
+            editPersonSchema,
+            async (formData) => {
+                // Merge only schema-defined fields into frontmatter
+                const updates: Record<string, any> = {};
+                for (const field of editPersonSchema.fields) {
+                    if (field.key === 'name') continue; // name is filename, handled separately
+                    updates[field.key] = formData[field.key] ?? '';
+                }
+                await updateFrontmatter(this.plugin.app, contact.file, updates);
+
+                // Handle name change (rename file)
+                if (formData.name && formData.name !== contact.name) {
+                    const newPath = contact.file.path.replace(
+                        contact.file.name,
+                        `${formData.name}.md`
+                    );
+                    await this.plugin.app.fileManager.renameFile(contact.file, newPath);
+                }
+
+                // Refresh index and contacts list
+                await this.plugin.index.scanVault();
+                this.plugin.index.trigger('change');
+                this.contacts = this.plugin.index.getContactsByStatus();
+                this.selectedContact = null;
+                this.refresh();
+                new Notice(`✓ ${formData.name} updated`);
+            },
+            initialValues,
+        );
+        modal.open();
+    }
+
+    /**
+     * Opens the hub directly in update mode for a specific contact.
+     * Used by the "Update This Person" command to skip the picker.
+     *
+     * @param contact - The contact to update
+     */
+    public openDirectUpdate(contact: OrbitContact): void {
+        this.selectedContact = contact;
+        this.view = 'updating';
+        this.open();
     }
 
     /** Save an update and return to hub grid */
@@ -212,8 +278,9 @@ export class OrbitHubModal extends ReactModal {
                     }, '🔄 Update'),
                     React.createElement('button', {
                         className: 'orbit-button',
-                        disabled: true,
-                        title: 'Coming in a future update',
+                        disabled: !this.selectedContact,
+                        onClick: () => this.handleEdit(),
+                        title: this.selectedContact ? `Edit ${this.selectedContact.name}` : 'Select a contact first',
                     }, '✏️ Edit'),
                     React.createElement('button', {
                         className: 'orbit-button',

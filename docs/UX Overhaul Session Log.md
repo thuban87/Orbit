@@ -450,6 +450,95 @@ Key files to reference:
 
 ---
 
+## 2026-02-15 — Phase 5 + 5.5: Edit Person & Update This Person
+
+**Focus:** Ship Edit Person (pre-filled form modal from hub) and Update This Person (active file → direct update). Write 37 new tests.
+
+### Completed:
+
+#### Edit Person Schema & Flow
+- ✅ Created `edit-person.schema.ts` — 7 fields matching new-person, `contact_link` instead of `google_contact`
+- ✅ Added `handleEdit()` to `OrbitHubModal` — reads contact data + frontmatter, opens `OrbitFormModal` pre-filled
+- ✅ Edit button enabled when contact is selected (was disabled placeholder)
+- ✅ Merge-only submit via `updateFrontmatter()` — only schema-defined fields written, custom frontmatter preserved
+- ✅ File rename via `fileManager.renameFile()` when name field changes
+
+#### Update This Person Command
+- ✅ Registered `update-this-person` command in `main.ts`
+- ✅ Active file detection via `getActiveViewOfType(MarkdownView)?.file`
+- ✅ Contact lookup in `OrbitIndex`, shows Notice for non-contacts
+- ✅ Added `openDirectUpdate()` method to `OrbitHubModal` — pre-sets view to `updating`, skips picker
+
+#### FormRenderer Improvement
+- ✅ Dropdown now shows raw frontmatter values not in options list (prevents silent data loss)
+
+#### Field Rename
+- ✅ Renamed `google_contact` → `contact_link` in both `new-person.schema.ts` and `edit-person.schema.ts`
+
+### Tests (37 new, 370 total):
+
+| File | Tests | Covers |
+|------|-------|--------|
+| `edit-person-schema.test.ts` | 13 | SchemaDef contract, field parity with new-person, edit-specific properties |
+| `orbit-form-modal-prefill.test.ts` | 9 | initialValues propagation, raw dropdown preservation, submit/close flow |
+| `update-this-person.test.ts` | 6 | Active file detection, contact lookup, direct update, error notices |
+| `edit-flow.test.ts` | 9 | Full round-trip: initialValues build, merge submit, file rename, index rescan |
+
+### Files Changed:
+
+**Source (new):**
+- `src/schemas/edit-person.schema.ts`
+
+**Source (modified):**
+- `src/modals/OrbitHubModal.ts` — `handleEdit()`, `openDirectUpdate()`, Edit button wiring
+- `src/main.ts` — `update-this-person` command
+- `src/components/FormRenderer.tsx` — Raw dropdown value injection
+- `src/schemas/new-person.schema.ts` — `google_contact` → `contact_link`
+
+**Test (new):**
+- `test/unit/schemas/edit-person-schema.test.ts`
+- `test/unit/modals/orbit-form-modal-prefill.test.ts`
+- `test/unit/commands/update-this-person.test.ts`
+- `test/integration/edit-flow.test.ts`
+
+**Test Infrastructure:**
+- `test/mocks/obsidian.ts` — Added `renameFile` mock to fileManager
+- `test/helpers/factories.ts` — Added `interactionLogHeading` to settings factory
+
+### Testing Notes:
+- All 370 tests pass, 28 test files
+- Build succeeds via `npm run build`
+- Deployed to test vault, Brad verified manually — edit pre-fill, update this person, and file rename all working
+
+### Blockers/Issues:
+- None discovered this session
+
+### Next Steps:
+Continue with Phase 6: User Schema System
+
+### Next Session Prompt:
+```
+Phase 5 + 5.5 complete. Ready to begin Phase 6: User Schema System.
+
+What was done last session:
+- ✅ edit-person.schema.ts with contact_link field
+- ✅ handleEdit() in OrbitHubModal with pre-fill from frontmatter
+- ✅ openDirectUpdate() for update-this-person command
+- ✅ FormRenderer raw dropdown value support
+- ✅ google_contact → contact_link rename
+- ✅ 37 new tests (370 total), all passing
+- ✅ Deployed and manually verified in test vault
+
+Continue with Phase 6: User Schema System
+Key files to reference:
+- docs/UX Overhaul - Implementation Plan.md
+- src/schemas/types.ts
+- src/schemas/edit-person.schema.ts
+- src/modals/OrbitFormModal.ts
+```
+
+---
+
 ## Git Commit Messages
 
 ### Phase 0
@@ -544,3 +633,32 @@ Tests (20 new, 333 total):
 - contact-manager.test.ts (+3 heading tests)
 - Removed 8 old picker modal tests
 ```
+
+### Phase 5 + 5.5
+```
+feat(edit): Phase 5 + 5.5 — Edit Person modal, Update This Person command, and tests
+
+Edit Person:
+- edit-person.schema.ts with 7 fields matching new-person schema
+- handleEdit() in OrbitHubModal reads contact data + frontmatter, opens pre-filled form
+- Merge-only submit via updateFrontmatter, preserves non-schema frontmatter keys
+- File rename via fileManager.renameFile() when name changes
+- Edit button enabled when contact selected in hub
+
+Update This Person:
+- update-this-person command detects active file via getActiveViewOfType(MarkdownView)
+- Contact lookup in OrbitIndex, Notice for non-contacts
+- openDirectUpdate() skips picker, opens update panel directly
+
+FormRenderer:
+- Dropdown shows raw frontmatter values not in options list
+
+Rename:
+- google_contact field renamed to contact_link across schemas and tests
+
+Tests (37 new, 370 total):
+- edit-person-schema.test.ts (13), orbit-form-modal-prefill.test.ts (9)
+- update-this-person.test.ts (6), edit-flow.test.ts (9)
+- Mock updates: renameFile, interactionLogHeading in factories
+```
+

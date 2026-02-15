@@ -103,6 +103,7 @@ export function createMockApp(overrides: {
                 const fm: Record<string, any> = {};
                 fn(fm);
             }),
+            renameFile: vi.fn(async () => { }),
         },
         workspace: {
             getActiveViewOfType: vi.fn(() => null),

@@ -1,15 +1,16 @@
 /**
- * Built-in schema for creating a new contact.
+ * Built-in schema for editing an existing contact.
  *
- * Defines the fields shown in the "Orbit: New Person" modal.
- * Used by ContactManager.createContact() to populate frontmatter
- * and template placeholders.
+ * Same fields as newPersonSchema but configured for editing:
+ * - Title and submitLabel reflect editing context
+ * - No output path (we're editing, not creating)
+ * - Pre-populated with existing frontmatter values via initialValues
  */
 import type { SchemaDef } from './types';
 
-export const newPersonSchema: SchemaDef = {
-    id: 'new-person',
-    title: 'New Person',
+export const editPersonSchema: SchemaDef = {
+    id: 'edit-person',
+    title: 'Edit Person',
     fields: [
         {
             key: 'name',
@@ -67,8 +68,5 @@ export const newPersonSchema: SchemaDef = {
             placeholder: 'https://...',
         },
     ],
-    submitLabel: 'Create Contact',
-    output: {
-        path: 'People/{{name}}.md',
-    },
+    submitLabel: 'Save Changes',
 };

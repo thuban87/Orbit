@@ -7,7 +7,7 @@ tags:
 ---
 # Orbit - Feature Priority List
 
-**Last Updated:** February 14, 2026
+**Last Updated:** February 15, 2026
 **Version:** 0.1.0
 
 ---
@@ -136,8 +136,8 @@ tags:
 - [x] Phase 3.5 — Contact Picker Tests (+40 tests)
 - [x] Phase 4 — Update Contacts Flow (Orbit Hub, UpdatePanel, interactionLogHeading setting)
 - [x] Phase 4.5 — Update Contacts Tests (+20 tests, 333 total)
-- [ ] Phase 5 — Edit Person & Update This Person
-- [ ] Phase 5.5 — Edit & Update This Person Tests
+- [x] Phase 5 — Edit Person & Update This Person (+37 tests, 370 total)
+- [x] Phase 5.5 — Edit & Update This Person Tests
 - [ ] Phase 6 — User Schema System
 - [ ] Phase 6.5 — User Schema System Tests
 - [ ] Phase 7 — AI Provider Architecture

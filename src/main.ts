@@ -152,6 +152,29 @@ export default class OrbitPlugin extends Plugin {
             },
         });
 
+        // Register Update This Person command (direct update for active file)
+        this.addCommand({
+            id: "update-this-person",
+            name: "Update This Person",
+            callback: () => {
+                const file = this.app.workspace.getActiveViewOfType(MarkdownView)?.file;
+                if (!file) {
+                    new Notice("Current file is not a tracked contact");
+                    return;
+                }
+                const contact = this.index.getContacts().find(
+                    (c) => c.file.path === file.path
+                );
+                if (!contact) {
+                    new Notice("Current file is not a tracked contact");
+                    return;
+                }
+                const contacts = this.index.getContactsByStatus();
+                const modal = new OrbitHubModal(this, contacts);
+                modal.openDirectUpdate(contact);
+            },
+        });
+
         // Orbit loaded successfully
     }
 

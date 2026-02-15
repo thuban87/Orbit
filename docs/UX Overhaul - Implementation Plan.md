@@ -663,7 +663,7 @@ For the picker context, we need to:
 
 ---
 
-## Phase 5: Edit Person & Update This Person
+## Phase 5: Edit Person & Update This Person ✅
 
 **Goal:** Ship the remaining two contact management commands.
 
@@ -709,7 +709,7 @@ For the picker context, we need to:
 
 ---
 
-## Phase 5.5: Edit & Update This Person Tests
+## Phase 5.5: Edit & Update This Person Tests ✅
 
 **Goal:** ≥80% unit + integration coverage on Phase 5 code.
 

@@ -76,8 +76,8 @@ describe('newPersonSchema', () => {
         expect(field!.type).toBe('photo');
     });
 
-    it('has a google_contact text field', () => {
-        const field = newPersonSchema.fields.find(f => f.key === 'google_contact');
+    it('has a contact_link text field', () => {
+        const field = newPersonSchema.fields.find(f => f.key === 'contact_link');
         expect(field).toBeDefined();
         expect(field!.type).toBe('text');
     });

@@ -76,6 +76,9 @@ function renderField(
                     onChange={(e) => onChange(field.key, e.target.value)}
                 >
                     {!field.required && <option value="">— Select —</option>}
+                    {value && !(field.options ?? []).includes(String(value)) && (
+                        <option key={`raw-${value}`} value={value}>{value}</option>
+                    )}
                     {(field.options ?? []).map((opt) => (
                         <option key={opt} value={opt}>{opt}</option>
                     ))}
