@@ -37,3 +37,6 @@ coverage/
 
 # Agent files
 .claude/
+
+# Test output
+test-output.txt

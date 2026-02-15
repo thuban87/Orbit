@@ -132,8 +132,8 @@ tags:
 - [x] Phase 1.5 — Schema & Form Modal Tests
 - [x] Phase 2 — ContactManager Service & New Person Modal (273 tests total)
 - [x] Phase 2.5 — ContactManager & New Person Tests (+54 tests)
-- [ ] Phase 3 — Contact Picker Modal
-- [ ] Phase 3.5 — Contact Picker Tests
+- [x] Phase 3 — Contact Picker Modal (313 tests total)
+- [x] Phase 3.5 — Contact Picker Tests (+40 tests)
 - [ ] Phase 4 — Update Contacts Flow
 - [ ] Phase 4.5 — Update Contacts Tests
 - [ ] Phase 5 — Edit Person & Update This Person

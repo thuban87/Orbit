@@ -499,7 +499,7 @@ interface SchemaDef {
 
 ---
 
-## Phase 3: Contact Picker Modal
+## Phase 3: Contact Picker Modal ✅
 
 **Goal:** Build the reusable card-grid picker that the Update, Edit, and AI flows all share.
 
@@ -558,7 +558,7 @@ For the picker context, we need to:
 
 ---
 
-## Phase 3.5: Contact Picker Tests
+## Phase 3.5: Contact Picker Tests ✅
 
 **Goal:** ≥80% unit + integration coverage on Phase 3 code.
 
@@ -1248,6 +1248,27 @@ npm run test -- --watch     # Watch mode during development
 - **Integration tests**: Test complete user flows (open modal → interact → verify outcome) with mocked Obsidian API but real component wiring
 - **Test file naming**: `[source-file-name].test.ts` (unit) or `[flow-name]-flow.test.ts` (integration)
 - **Factory functions**: Use `test/helpers/factories.ts` for consistent test data creation
+
+---
+
+## Ideas Along the Way
+
+Feature ideas captured during implementation for future consideration.
+
+### Auto-Scrape Contact Photos
+**Origin:** Phase 3 session — manual photo management is tedious with expiring CDN URLs.
+
+**Concept:** When a user pastes a URL into the `photo` frontmatter field, the plugin automatically:
+1. Downloads the image to a configurable vault folder (e.g., `Resources/Assets/Orbit/`)
+2. Replaces the URL in frontmatter with a local vault path or wikilink
+3. Ensures the image persists without expiring tokens
+
+**Considerations:**
+- Add a plugin setting for the photo storage folder path
+- Use Obsidian's `requestUrl` for the download (not `fetch`)
+- Handle filename conflicts (append hash or timestamp)
+- Could trigger on frontmatter change events or via a manual command
+- Should be opt-in via a settings toggle
 
 ---
 

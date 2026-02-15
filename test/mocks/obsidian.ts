@@ -195,7 +195,11 @@ export class Menu {
         return this;
     }
 
+    addSeparator(): this { return this; }
+
     showAtPosition(): void { }
+
+    showAtMouseEvent(_e: MouseEvent): void { }
 }
 
 // ─── Settings ───────────────────────────────────────────────────

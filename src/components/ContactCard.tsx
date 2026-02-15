@@ -2,11 +2,15 @@ import { useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Menu, Notice } from "obsidian";
 import { OrbitContact } from "../types";
-import { useOrbit } from "../context/OrbitContext";
+import { useOrbitOptional } from "../context/OrbitContext";
 import { FuelTooltip } from "./FuelTooltip";
 
 interface ContactCardProps {
     contact: OrbitContact;
+    /** Display mode: 'sidebar' for the main view, 'picker' for modal selection */
+    mode?: "sidebar" | "picker";
+    /** Callback when a contact is selected (picker mode only) */
+    onSelect?: (contact: OrbitContact) => void;
 }
 
 /**
@@ -39,20 +43,32 @@ function stringToColor(str: string): string {
  * ContactCard - Individual contact avatar with status ring and name.
  * Hover shows Conversational Fuel tooltip. Right-click shows context menu.
  */
-export function ContactCard({ contact }: ContactCardProps) {
-    const { plugin, refreshContacts } = useOrbit();
+export function ContactCard({ contact, mode = "sidebar", onSelect }: ContactCardProps) {
+    // Always call hook (React Rules of Hooks), returns null outside OrbitProvider
+    const orbit = useOrbitOptional();
+    const plugin = orbit?.plugin;
+    const refreshContacts = orbit?.refreshContacts;
+
     const [showTooltip, setShowTooltip] = useState(false);
     const cardRef = useRef<HTMLDivElement>(null);
     const hoverTimeoutRef = useRef<number | null>(null);
     const hideTimeoutRef = useRef<number | null>(null);
 
     const handleClick = (e: React.MouseEvent) => {
-        // Open the contact's note
-        const leaf = plugin.app.workspace.getLeaf(e.ctrlKey || e.metaKey);
-        leaf.openFile(contact.file);
+        if (mode === "picker" && onSelect) {
+            onSelect(contact);
+            return;
+        }
+        // Open the contact's note (sidebar mode)
+        if (plugin) {
+            const leaf = plugin.app.workspace.getLeaf(e.ctrlKey || e.metaKey);
+            leaf.openFile(contact.file);
+        }
     };
 
     const handleContextMenu = (e: React.MouseEvent) => {
+        // No context menu in picker mode
+        if (mode === "picker") return;
         e.preventDefault();
         e.stopPropagation();
 
@@ -108,7 +124,7 @@ export function ContactCard({ contact }: ContactCardProps) {
                 .setTitle("Open note")
                 .setIcon("file-text")
                 .onClick(() => {
-                    plugin.app.workspace.getLeaf().openFile(contact.file);
+                    plugin!.app.workspace.getLeaf().openFile(contact.file);
                 })
         );
 
@@ -117,7 +133,7 @@ export function ContactCard({ contact }: ContactCardProps) {
                 .setTitle("Open in new tab")
                 .setIcon("file-plus")
                 .onClick(() => {
-                    plugin.app.workspace.getLeaf(true).openFile(contact.file);
+                    plugin!.app.workspace.getLeaf(true).openFile(contact.file);
                 })
         );
 
@@ -125,6 +141,7 @@ export function ContactCard({ contact }: ContactCardProps) {
     };
 
     const markAsContacted = async () => {
+        if (!plugin || !refreshContacts) return;
         const today = new Date().toISOString().split("T")[0];
         try {
             await plugin.app.fileManager.processFrontMatter(
@@ -141,6 +158,7 @@ export function ContactCard({ contact }: ContactCardProps) {
     };
 
     const snoozeContact = async (days: number) => {
+        if (!plugin || !refreshContacts) return;
         const snoozeDate = new Date();
         snoozeDate.setDate(snoozeDate.getDate() + days);
         const snoozeStr = snoozeDate.toISOString().split("T")[0];
@@ -160,6 +178,7 @@ export function ContactCard({ contact }: ContactCardProps) {
     };
 
     const unsnoozeContact = async () => {
+        if (!plugin || !refreshContacts) return;
         try {
             await plugin.app.fileManager.processFrontMatter(
                 contact.file,
@@ -215,6 +234,32 @@ export function ContactCard({ contact }: ContactCardProps) {
 
     const statusClass = `orbit-avatar--${contact.status}`;
 
+    // Resolve photo src: URLs, wikilinks ([[file]]), or vault paths
+    const photoSrc = (() => {
+        if (!contact.photo) return null;
+        // URL — pass through as-is
+        if (contact.photo.startsWith("http://") || contact.photo.startsWith("https://")) {
+            return contact.photo;
+        }
+        if (!plugin) return contact.photo;
+
+        // Wikilink — strip [[ ]] and resolve via metadataCache
+        if (contact.photo.startsWith("[[") && contact.photo.endsWith("]]")) {
+            const linkpath = contact.photo.slice(2, -2);
+            const resolved = plugin.app.metadataCache.getFirstLinkpathDest(
+                linkpath,
+                contact.file.path
+            );
+            if (resolved) {
+                return plugin.app.vault.getResourcePath(resolved);
+            }
+            return null; // wikilink couldn't resolve
+        }
+
+        // Vault-local path — resolve via adapter
+        return plugin.app.vault.adapter.getResourcePath(contact.photo);
+    })();
+
     return (
         <>
             <div
@@ -225,9 +270,9 @@ export function ContactCard({ contact }: ContactCardProps) {
                 onMouseEnter={handleMouseEnter}
                 onMouseLeave={handleMouseLeave}
             >
-                {contact.photo ? (
+                {photoSrc ? (
                     <img
-                        src={contact.photo}
+                        src={photoSrc}
                         alt={contact.name}
                         className={`orbit-avatar ${statusClass}`}
                         onError={(e) => {

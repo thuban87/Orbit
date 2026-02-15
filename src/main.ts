@@ -1,9 +1,10 @@
-import { Plugin, TFile, WorkspaceLeaf, MarkdownView } from "obsidian";
+import { Plugin, TFile, WorkspaceLeaf, MarkdownView, Notice } from "obsidian";
 import { OrbitSettingTab, OrbitSettings, DEFAULT_SETTINGS } from "./settings";
 import { OrbitIndex } from "./services/OrbitIndex";
 import { OrbitView, VIEW_TYPE_ORBIT } from "./views/OrbitView";
 import { LinkListener } from "./services/LinkListener";
 import { OrbitFormModal } from "./modals/OrbitFormModal";
+import { ContactPickerModal } from "./modals/ContactPickerModal";
 import { newPersonSchema } from "./schemas/new-person.schema";
 import { createContact } from "./services/ContactManager";
 
@@ -134,6 +135,24 @@ export default class OrbitPlugin extends Plugin {
                         // Refresh the index to pick up the new contact
                         await this.index.scanVault();
                         this.index.trigger("change");
+                    }
+                );
+                modal.open();
+            },
+        });
+
+        // Temporary debug command for manual picker verification (remove in Phase 4)
+        this.addCommand({
+            id: "debug-picker",
+            name: "Debug: Contact Picker",
+            callback: () => {
+                const contacts = this.index.getContactsByStatus();
+                const modal = new ContactPickerModal(
+                    this.app,
+                    this,
+                    contacts,
+                    (contact) => {
+                        new Notice(`Selected: ${contact.name}`);
                     }
                 );
                 modal.open();

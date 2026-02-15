@@ -516,3 +516,119 @@
   color: var(--text-muted);
   font-style: italic;
 }
+
+/* ================================
+   Contact Picker Modal (Phase 3)
+   ================================ */
+.orbit-picker {
+  --orbit-stable: #22c55e;
+  --orbit-wobble: #eab308;
+  --orbit-decay: #ef4444;
+  --orbit-ring-width: 3px;
+  --orbit-avatar-size: 60px;
+  --orbit-card-gap: 12px;
+}
+
+.orbit-picker .modal-content {
+  min-width: 500px;
+  max-width: 900px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.orbit-picker-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ── Toolbar: search + toggle ────────────── */
+.orbit-picker-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.orbit-picker-search {
+  flex: 1;
+  min-width: 200px;
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  color: var(--text-normal);
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  transition: border-color 0.15s ease;
+}
+
+.orbit-picker-search:focus {
+  outline: none;
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb, 124, 77, 255), 0.15);
+}
+
+.orbit-picker-search::placeholder {
+  color: var(--text-muted);
+}
+
+.orbit-picker-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.orbit-picker-toggle input[type="checkbox"] {
+  accent-color: var(--interactive-accent);
+}
+
+/* ── Filter Row ──────────────────────────── */
+.orbit-picker-filters {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.orbit-picker-select {
+  padding: 4px 8px;
+  font-size: 0.8rem;
+  color: var(--text-normal);
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.orbit-picker-select:hover {
+  border-color: var(--interactive-accent);
+}
+
+.orbit-picker-select:focus {
+  outline: none;
+  border-color: var(--interactive-accent);
+}
+
+/* ── Grid ────────────────────────────────── */
+.orbit-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--orbit-avatar-size, 60px), 1fr));
+  gap: var(--orbit-card-gap, 12px);
+  justify-items: center;
+  padding: 4px 0;
+}
+
+/* ── Empty state ─────────────────────────── */
+.orbit-picker-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+  color: var(--text-muted);
+  text-align: center;
+  font-style: italic;
+}

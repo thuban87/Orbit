@@ -290,10 +290,174 @@ Tests (54 new, 273 total):
 - contact-manager.test.ts (28), new-person-schema.test.ts (15)
 - folder-suggest.test.ts (8), orbit-index.test.ts (+3)
 
+```
+
+---
+
+## 2026-02-14 — Phase 3 + 3.5: Contact Picker Modal & Tests
+
+**Focus:** Build the reusable Contact Picker modal with search, filters, sorting, and local photo support. Write 40 new tests.
+
+### Completed:
+
+#### Contact Picker Modal
+- ✅ Created `ContactPickerGrid.tsx` — Card grid with search, status sorting, "decaying only" toggle
+- ✅ Created `ContactPickerModal.ts` — Modal shell extending `ReactModal`, wraps grid in `OrbitProvider`
+- ✅ Added category filter dropdown (dynamically populated from contacts)
+- ✅ Added social battery filter dropdown (Charger / Neutral / Drain)
+- ✅ Added sort-by-last-contacted (ascending/descending) alongside existing status sort
+- ✅ Registered temporary `debug-picker` command in `main.ts`
+
+#### ContactCard Enhancements
+- ✅ Added `mode` prop (`"sidebar" | "picker"`) — picker mode: click fires `onSelect`, context menu suppressed
+- ✅ Added local vault photo support via `vault.adapter.getResourcePath()`
+- ✅ Added wikilink photo support via `metadataCache.getFirstLinkpathDest()` + `getResourcePath()`
+
+#### Context & Tooltip Updates
+- ✅ Added `useOrbitOptional` hook to `OrbitContext.tsx` — returns `null` outside provider (no throw)
+- ✅ Updated `FuelTooltip.tsx` to use `useOrbitOptional`, falls back to cached `contact.fuel`
+
+#### Styling
+- ✅ Added picker modal CSS: search bar, filter row, filter selects, toggle, grid layout, empty state
+
+### Tests (40 new, 313 total):
+
+| File | Tests | Covers |
+|------|-------|--------|
+| `contact-card-modes.test.tsx` | 11 | Picker/sidebar modes, photo resolution (URL, vault path, wikilink) |
+| `contact-picker-grid.test.tsx` | 16 | Search, category filter, battery filter, sort modes, empty states |
+| `contact-picker-modal.test.ts` | 8 | Lifecycle, React root, OrbitProvider wrapping, onSelect callback |
+| `picker-flow.test.tsx` | 5 | Full integration: render → filter → select → callback |
+
+### Test Infrastructure Updates:
+- ✅ Added `addSeparator()` and `showAtMouseEvent()` to `Menu` mock in `test/mocks/obsidian.ts`
+- ✅ Created `.agent/workflows/test.md` — Test runner workflow (pipe output to file)
+- ✅ Added `test-output.txt` to `.gitignore`
+
+### Files Changed:
+
+**Source (modified):**
+- `src/components/ContactCard.tsx` — mode prop, local/wikilink photo resolution
+- `src/components/FuelTooltip.tsx` — useOrbitOptional fallback
+- `src/context/OrbitContext.tsx` — useOrbitOptional hook
+- `src/main.ts` — debug-picker command, plugin param to modal
+- `styles.css` — Picker modal styles
+- `docs/UX Overhaul - Implementation Plan.md` — Ideas Along the Way section
+
+**Source (new):**
+- `src/components/ContactPickerGrid.tsx`
+- `src/modals/ContactPickerModal.ts`
+
+**Test (new):**
+- `test/unit/components/contact-card-modes.test.tsx`
+- `test/unit/components/contact-picker-grid.test.tsx`
+- `test/unit/modals/contact-picker-modal.test.ts`
+- `test/integration/picker-flow.test.tsx`
+
+**Infrastructure:**
+- `test/mocks/obsidian.ts` — Menu mock updates
+- `.agent/workflows/test.md` — Test runner workflow
+- `.gitignore` — test-output.txt
+
+### Testing Notes:
+- All 313 tests pass, 19 test files
+- Build succeeds via `npm run build`
+- Deployed to test vault, Brad verified manually — local photos, wikilinks, filters, sorting all working
+- Fixed: Menu mock missing `addSeparator`/`showAtMouseEvent`, modal tests using Obsidian-specific DOM APIs not in mock, integration test import path depth
+
+### Blockers/Issues:
+- None discovered this session
+
+### Next Steps:
+Continue with Phase 4: Update Contacts Flow
+
+---
+
+### Next Session Prompt:
+```
+Phase 3 + 3.5 complete. Ready to begin Phase 4: Update Contacts Flow.
+
+What was done last session:
+- ✅ ContactPickerGrid with search, category/battery filters, sort-by-last-contacted
+- ✅ ContactPickerModal wrapping grid in OrbitProvider
+- ✅ ContactCard mode prop (sidebar vs picker), local photo + wikilink support
+- ✅ useOrbitOptional hook, FuelTooltip fallback
+- ✅ 40 new tests (313 total), all passing
+- ✅ Deployed and manually verified in test vault
+
+Continue with Phase 4: Update Contacts Flow
+Key files to reference:
+- docs/UX Overhaul - Implementation Plan.md
+- src/modals/ContactPickerModal.ts
+- src/components/ContactPickerGrid.tsx
+- src/services/ContactManager.ts
+```
+
+---
+
+## Git Commit Messages
+
+### Phase 0
+```
+feat(test): Phase 0 — test infrastructure & baseline tests (99 tests)
+```
+
+### Phase 1 + 1.5
+```
+feat(modal): Phase 1 + 1.5 — schema system, form modal foundation & tests (120 tests)
+```
+
+### Phase 2 + 2.5
+```
+feat(contacts): Phase 2 + 2.5 — ContactManager service, New Person modal & tests
+
+ContactManager Service:
+- createContact with template loading, processFrontMatter, folder creation
+- updateFrontmatter (merge-only), appendToInteractionLog (atomic)
+- stripFrontmatter, ensureFolderExists helpers
+
+New Person Flow:
+- 7-field schema, FolderSuggest autocomplete, photo preview
+- "New Person" command replaces debug-form command
+- contactsFolder targeted scanning in OrbitIndex
+
+Bug Fixes:
+- FolderSuggest crash, tag override, Templater syntax, missing frontmatter, ENOENT
+
+Tests (54 new, 273 total):
+- contact-manager.test.ts (28), new-person-schema.test.ts (15)
+- folder-suggest.test.ts (8), orbit-index.test.ts (+3)
+
 Coverage: ContactManager 98.5%, schema 100%, FolderSuggest 100%, OrbitIndex 98%
 ```
 
+### Phase 3 + 3.5
+```
+feat(picker): Phase 3 + 3.5 — Contact Picker modal, filters, local photos and tests
 
+Contact Picker Modal:
+- ContactPickerGrid with search, category/battery filters, sort-by-last-contacted
+- ContactPickerModal extending ReactModal, wraps grid in OrbitProvider
+- Temporary debug-picker command for testing
+
+ContactCard Enhancements:
+- mode prop (sidebar vs picker) with onSelect callback
+- Local vault photo support via getResourcePath
+- Wikilink photo resolution via metadataCache.getFirstLinkpathDest
+
+Context and Tooltip:
+- useOrbitOptional hook for safe context access outside provider
+- FuelTooltip graceful fallback to cached contact.fuel
+
+Tests (40 new, 313 total):
+- contact-card-modes.test.tsx (11), contact-picker-grid.test.tsx (16)
+- contact-picker-modal.test.ts (8), picker-flow.test.tsx (5)
+- Menu mock updated with addSeparator/showAtMouseEvent
+
+Infrastructure:
+- .agent/workflows/test.md — test runner workflow
+- test-output.txt added to .gitignore
+```
 
 
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { OrbitContact } from "../types";
-import { useOrbit } from "../context/OrbitContext";
+import { useOrbitOptional } from "../context/OrbitContext";
 
 interface FuelTooltipProps {
     contact: OrbitContact;
@@ -20,7 +20,8 @@ export function FuelTooltip({
     onMouseEnter,
     onMouseLeave,
 }: FuelTooltipProps) {
-    const { plugin } = useOrbit();
+    const orbit = useOrbitOptional();
+    const plugin = orbit?.plugin ?? null;
     const [fuel, setFuel] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const tooltipRef = useRef<HTMLDivElement>(null);
@@ -30,17 +31,31 @@ export function FuelTooltip({
 
         const fetchFuel = async () => {
             setLoading(true);
-            try {
-                const content = await plugin.app.vault.read(contact.file);
-                const parsed = parseFuelSection(content);
-                if (!cancelled) {
-                    setFuel(parsed);
-                    setLoading(false);
+
+            // If plugin is available (sidebar), read fuel from vault
+            if (plugin) {
+                try {
+                    const content = await plugin.app.vault.read(contact.file);
+                    const parsed = parseFuelSection(content);
+                    if (!cancelled) {
+                        setFuel(parsed);
+                        setLoading(false);
+                    }
+                } catch (error) {
+                    console.error("Orbit: Failed to read fuel", error);
+                    if (!cancelled) {
+                        setFuel(null);
+                        setLoading(false);
+                    }
                 }
-            } catch (error) {
-                console.error("Orbit: Failed to read fuel", error);
+            } else {
+                // No plugin (picker mode) — use cached fuel from contact
                 if (!cancelled) {
-                    setFuel(null);
+                    if (contact.fuel && contact.fuel.length > 0) {
+                        setFuel(convertToHtml(contact.fuel.join("\n")));
+                    } else {
+                        setFuel(null);
+                    }
                     setLoading(false);
                 }
             }
