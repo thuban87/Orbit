@@ -13,6 +13,8 @@ export interface OrbitSettings {
     templatePath: string;
     /** Folder to scan for contacts (empty = full vault) */
     contactsFolder: string;
+    /** Heading text for the interaction log section (without ## prefix) */
+    interactionLogHeading: string;
 }
 
 export const DEFAULT_SETTINGS: OrbitSettings = {
@@ -21,6 +23,7 @@ export const DEFAULT_SETTINGS: OrbitSettings = {
     dateFormat: "YYYY-MM-DD",
     templatePath: "System/Templates/Person Template.md",
     contactsFolder: "",
+    interactionLogHeading: "Interaction Log",
 };
 
 export class OrbitSettingTab extends PluginSettingTab {
@@ -120,6 +123,22 @@ export class OrbitSettingTab extends PluginSettingTab {
                     .setValue(this.plugin.settings.templatePath)
                     .onChange(async (value) => {
                         this.plugin.settings.templatePath = value.trim();
+                        await this.plugin.saveSettings();
+                    })
+            );
+
+        // Interaction Log Heading setting
+        new Setting(containerEl)
+            .setName("Interaction log heading")
+            .setDesc(
+                "The heading text used for the interaction log section in contact notes. Do not include the ## prefix."
+            )
+            .addText((text) =>
+                text
+                    .setPlaceholder("Interaction Log")
+                    .setValue(this.plugin.settings.interactionLogHeading)
+                    .onChange(async (value) => {
+                        this.plugin.settings.interactionLogHeading = value.trim() || "Interaction Log";
                         await this.plugin.saveSettings();
                     })
             );

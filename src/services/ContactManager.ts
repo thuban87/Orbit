@@ -182,40 +182,40 @@ export async function updateFrontmatter(
  * @param app - Obsidian App instance
  * @param file - The contact file
  * @param entry - The interaction log entry text
+ * @param heading - The heading text to match (without ## prefix, default: "Interaction Log")
  */
 export async function appendToInteractionLog(
     app: App,
     file: TFile,
-    entry: string
+    entry: string,
+    heading: string = 'Interaction Log'
 ): Promise<void> {
     const timestamp = formatLocalDate();
     const logEntry = `- ${timestamp}: ${entry}`;
 
     await app.vault.process(file, (content: string) => {
-        // Find the "## Interaction Log" section
-        const logHeader = '## Interaction Log';
-        const logIndex = content.indexOf(logHeader);
+        // Search for any ## heading containing the heading text
+        // This matches "## Interaction Log", "## 📝 Interaction Log", etc.
+        const lines = content.split('\n');
+        let headerLineIndex = -1;
 
-        if (logIndex === -1) {
-            // No Interaction Log section — append at end
-            return content + `\n${logHeader}\n${logEntry}\n`;
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i].trimEnd();
+            if (line.startsWith('## ') && line.includes(heading)) {
+                headerLineIndex = i;
+                break;
+            }
         }
 
-        // Insert after the header line
-        const afterHeader = logIndex + logHeader.length;
-        const nextNewline = content.indexOf('\n', afterHeader);
-
-        if (nextNewline === -1) {
-            // Header is at end of file
-            return content + `\n${logEntry}\n`;
+        if (headerLineIndex === -1) {
+            // No matching heading — append new section at end
+            const newHeader = `## ${heading}`;
+            return content + `\n${newHeader}\n${logEntry}\n`;
         }
 
         // Insert the entry after the header line
-        return (
-            content.slice(0, nextNewline + 1) +
-            logEntry + '\n' +
-            content.slice(nextNewline + 1)
-        );
+        lines.splice(headerLineIndex + 1, 0, logEntry);
+        return lines.join('\n');
     });
 
     Logger.debug('ContactManager', `Appended interaction log to ${file.path}`);

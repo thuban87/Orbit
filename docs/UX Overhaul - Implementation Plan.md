@@ -80,7 +80,7 @@ src/
 ├── modals/
 │   ├── ReactModal.ts                # [NEW] Base modal class — handles createRoot/unmount lifecycle
 │   ├── OrbitFormModal.ts            # [NEW] Generic schema-driven form modal (extends ReactModal)
-│   ├── ContactPickerModal.ts        # [NEW] Card grid picker modal (extends ReactModal)
+│   ├── OrbitHubModal.ts              # [NEW] Centralized contact hub modal (extends ReactModal)
 │   └── AiResultModal.ts            # [NEW] AI message result modal (extends ReactModal)
 ├── services/
 │   ├── OrbitIndex.ts                # Existing (modify: contactsFolder support)
@@ -504,7 +504,7 @@ interface SchemaDef {
 **Goal:** Build the reusable card-grid picker that the Update, Edit, and AI flows all share.
 
 ### Deliverables
-- `modals/ContactPickerModal.ts` — Modal shell with card grid (extends `ReactModal`)
+- `modals/ContactPickerModal.ts` — Modal shell with card grid (extends `ReactModal`) *(deleted in Phase 4, replaced by `OrbitHubModal.ts`)*
 - `components/ContactPickerGrid.tsx` — Card grid for modal context (uses `ContactCard`)
 - Grid sorted by status: decay → wobble → stable → snoozed
 - Optional filter: "Show decaying only" toggle
@@ -544,7 +544,7 @@ For the picker context, we need to:
 
 | File | Action |
 |------|--------|
-| `src/modals/ContactPickerModal.ts` | **NEW** — Picker modal shell (extends `ReactModal`) |
+| `src/modals/ContactPickerModal.ts` | **NEW** — Picker modal shell (extends `ReactModal`) *(deleted in Phase 4, replaced by `OrbitHubModal.ts`)* |
 | `src/components/ContactPickerGrid.tsx` | **NEW** — Grid layout for picker |
 | `src/components/ContactCard.tsx` | **MODIFY** — Add `mode` prop to toggle sidebar vs picker behavior |
 | `styles.css` | **MODIFY** — Picker modal styles, search bar |
@@ -578,17 +578,22 @@ For the picker context, we need to:
 
 ---
 
-## Phase 4: Update Contacts Flow
+## Phase 4: Update Contacts Flow ✅
 
-**Goal:** Wire the contact picker to an inline update panel. This replaces QuickAdd for contact updates.
+**Goal:** Build a centralized Orbit Hub modal for contact management. Replaces QuickAdd for contact updates.
 
 ### Deliverables
 - `components/UpdatePanel.tsx` — Inline form for logging a contact touchpoint
-- `modals/ContactPickerModal.ts` — Extended with two-panel layout: grid ↔ update panel
+- `modals/OrbitHubModal.ts` — **NEW** centralized hub modal replacing `ContactPickerModal` with two-panel layout: grid ↔ update panel
+- Action bar: Update, Add (opens New Person), Digest (runs weekly digest), Done (closes modal)
+- Disabled placeholders: Edit (Phase 5), Suggest Message (Phase 8)
+- Selected card highlight with accent border
 - Batch mode: after saving an update, modal returns to the card grid (not closed)
-- "Done" button to close the modal when finished updating
-- Command: `update-contacts` (displayed as "Orbit: Update Contacts") in command palette + ribbon
-- Remove temporary `debug-picker` command from Phase 3
+- `settings.ts` — New `interactionLogHeading` setting: configurable heading text for interaction log injection (supports emoji headings like `## 📝 Interaction Log`)
+- `ContactManager.ts` — `appendToInteractionLog()` updated with `heading` parameter using `includes()` matching
+- Command: `update-contacts` (displayed as "Orbit: Update Contacts") in command palette
+- Removed temporary `debug-picker` command from Phase 3
+- **Deleted** `ContactPickerModal.ts` — replaced entirely by `OrbitHubModal.ts`
 
 ### Update Panel Fields
 
@@ -600,24 +605,31 @@ For the picker context, we need to:
 
 ### Update Flow
 1. User runs "Update Contacts" command
-2. `ContactPickerModal` opens with full card grid (sorted by decay)
-3. User clicks a card → grid slides/transitions to `UpdatePanel` for that contact
-4. `UpdatePanel` shows contact info at top (name, photo, current status) + update fields
-5. User fills in and clicks "Save"
-6. `ContactManager.updateFrontmatter()` sets `last_contact` and `last_interaction`
-7. `ContactManager.appendToInteractionLog()` adds timestamped note (if provided) via `vault.process()`
-8. Modal transitions back to the card grid
-9. Updated contact's card refreshes to show new status
-10. User can update more contacts or click "Done" to close
+2. `OrbitHubModal` opens with full card grid (sorted by decay)
+3. User clicks a card → card highlights with accent border (selected state)
+4. User clicks "🔄 Update" → modal transitions to `UpdatePanel` for that contact
+5. `UpdatePanel` shows contact info at top (name, photo/initials, status badge) + update fields
+6. User fills in and clicks "Save"
+7. `ContactManager.updateFrontmatter()` sets `last_contact` and `last_interaction`
+8. `ContactManager.appendToInteractionLog()` appends timestamped note (if provided) via `vault.process()` — uses configurable `interactionLogHeading` setting
+9. Modal transitions back to the card grid
+10. Updated contact's card refreshes to show new status
+11. User can update more contacts, use other action buttons, or click "Done" to close
 
 ### Files to Create/Modify
 
 | File | Action |
 |------|--------|
 | `src/components/UpdatePanel.tsx` | **NEW** — Inline update form |
-| `src/modals/ContactPickerModal.ts` | **MODIFY** — Add two-panel routing (grid ↔ update) |
-| `src/main.ts` | **MODIFY** — Register `update-contacts` command |
-| `styles.css` | **MODIFY** — Update panel styles, transition between panels |
+| `src/modals/OrbitHubModal.ts` | **NEW** — Centralized hub modal with two-panel routing (grid ↔ update) |
+| `src/modals/ContactPickerModal.ts` | **DELETED** — Replaced by `OrbitHubModal` |
+| `src/components/ContactCard.tsx` | **MODIFY** — Added `selected` prop + CSS class |
+| `src/components/ContactPickerGrid.tsx` | **MODIFY** — Added `selectedContact` state |
+| `src/modals/ReactModal.ts` | **MODIFY** — `root` changed to `protected` for subclass access |
+| `src/settings.ts` | **MODIFY** — Added `interactionLogHeading` setting |
+| `src/services/ContactManager.ts` | **MODIFY** — `heading` parameter in `appendToInteractionLog` |
+| `src/main.ts` | **MODIFY** — Register `update-contacts` command, remove `debug-picker` |
+| `styles.css` | **MODIFY** — Hub layout, selected card, action bar, update panel styles |
 
 ### Verification
 - Build succeeds
@@ -632,22 +644,22 @@ For the picker context, we need to:
 
 ---
 
-## Phase 4.5: Update Contacts Tests
+## Phase 4.5: Update Contacts Tests ✅
 
 **Goal:** ≥80% unit + integration coverage on Phase 4 code.
 
 ### Test Files
 
-| File | Type | Covers |
-|------|------|--------|
-| `test/unit/components/update-panel.test.ts` | Unit | Renders contact info, date defaults to today, interaction type dropdown, note textarea, submit callback, cancel/back button |
-| `test/unit/modals/contact-picker-update.test.ts` | Unit | Two-panel routing — grid state vs update state, transitions between panels, Done button closes modal |
-| `test/integration/update-flow.test.ts` | Integration | Full flow: open picker → select contact → fill update panel → save → verify frontmatter updated + interaction log appended → verify returns to grid |
+| File | Tests | Covers |
+|------|-------|--------|
+| `test/unit/components/update-panel.test.tsx` | 17 | Rendering (name, status, photo/initials, form fields), interactions (date, dropdown, note, save, cancel), status variants |
+| `test/unit/modals/orbit-hub-modal.test.ts` | 9 | Lifecycle, React root management, CSS class, render content, OrbitProvider wrapping |
+| `test/unit/services/contact-manager.test.ts` | +3 | Emoji heading match, custom heading, heading creation with `appendToInteractionLog` |
 
 ### Coverage Targets
 - `components/UpdatePanel.tsx`: ≥80% lines + branches
-- `modals/ContactPickerModal.ts` (update extensions): maintains ≥80%
-- `services/ContactManager.ts` (updateFrontmatter, appendToInteractionLog): maintains ≥80%
+- `modals/OrbitHubModal.ts`: ≥80% lines + branches
+- `services/ContactManager.ts` (appendToInteractionLog heading param): maintains ≥80%
 
 ---
 
@@ -662,7 +674,7 @@ For the picker context, we need to:
 - Reuses `OrbitFormModal` — opens with existing frontmatter values pre-filled
 - On submit: uses `updateFrontmatter()` to **merge** changes back (only touches schema-defined fields, preserves all other frontmatter keys like `nickname`, `custom_field`, etc.)
 - If a frontmatter value doesn't match a dropdown option (e.g., someone manually typed `frequency: Every Other Day`), display the raw value as-is in the field
-- Flow: Command palette → `ContactPickerModal` (select who to edit) → `OrbitFormModal` (pre-filled)
+- Flow: Command palette → `OrbitHubModal` (select contact + click Edit) → `OrbitFormModal` (pre-filled)
 - Command: `edit-person` (displayed as "Orbit: Edit Person")
 
 > [!IMPORTANT]
@@ -684,7 +696,7 @@ For the picker context, we need to:
 |------|--------|
 | `src/schemas/edit-person.schema.ts` | **NEW** — Edit Person schema |
 | `src/modals/OrbitFormModal.ts` | **MODIFY** — Support pre-populating fields from existing data |
-| `src/modals/ContactPickerModal.ts` | **MODIFY** — Support "edit" callback mode |
+| `src/modals/OrbitHubModal.ts` | **MODIFY** — Wire Edit button to open `OrbitFormModal` with pre-filled data |
 | `src/main.ts` | **MODIFY** — Register both commands |
 
 ### Verification
@@ -913,7 +925,7 @@ interface AiProvider {
 
 ### Flow
 1. User runs "Orbit: Suggest Message"
-2. `ContactPickerModal` opens (decay-first sorting)
+2. `OrbitHubModal` opens (decay-first sorting, user selects contact + clicks Suggest Message)
 3. User selects a contact
 4. Plugin reads contact's full `.md` file content
 5. Extracts structured context (fuel, small talk, last interaction, etc.)

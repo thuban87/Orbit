@@ -18,6 +18,8 @@ interface ContactPickerGridProps {
     contacts: OrbitContact[];
     /** Callback when a contact is selected */
     onSelect: (contact: OrbitContact) => void;
+    /** Currently selected contact (for hub highlight) */
+    selectedContact?: OrbitContact | null;
 }
 
 /** Status sort priority: lower = shown first */
@@ -33,7 +35,7 @@ type SortMode = "status" | "last-asc" | "last-desc";
 /**
  * ContactPickerGrid — Grid of ContactCards with search, filter, and sort controls.
  */
-export function ContactPickerGrid({ contacts, onSelect }: ContactPickerGridProps) {
+export function ContactPickerGrid({ contacts, onSelect, selectedContact }: ContactPickerGridProps) {
     const [searchQuery, setSearchQuery] = useState("");
     const [showDecayingOnly, setShowDecayingOnly] = useState(false);
     const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -177,6 +179,7 @@ export function ContactPickerGrid({ contacts, onSelect }: ContactPickerGridProps
                             contact={contact}
                             mode="picker"
                             onSelect={onSelect}
+                            selected={selectedContact?.file.path === contact.file.path}
                         />
                     ))}
                 </div>

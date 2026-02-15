@@ -38,7 +38,7 @@ export class ModalErrorBoundary extends React.Component<
 }
 
 export abstract class ReactModal extends Modal {
-    private root: Root | null = null;
+    protected root: Root | null = null;
 
     constructor(app: App) {
         super(app);

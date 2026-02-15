@@ -235,24 +235,79 @@ Each session entry should include:
 
 ---
 
+## 2026-02-14 — Phase 4 + 4.5: Orbit Hub, Update Contacts Flow & Tests\r
+\r
+**Focus:** Build the centralized Orbit Hub modal, UpdatePanel component, configurable interaction log heading, and comprehensive tests.\r
+\r
+### Completed:\r
+\r
+#### Orbit Hub Modal\r
+- ✅ Created `OrbitHubModal.ts` — Centralized contact management modal replacing `ContactPickerModal`\r
+- ✅ Two-panel state machine: hub grid ↔ UpdatePanel, tracks `selectedContact`\r
+- ✅ Action bar: Update, Add, Digest, Done (Edit + Suggest Message disabled for future phases)\r
+- ✅ Added `selected` state to `ContactCard` + `ContactPickerGrid`\r
+- ✅ Registered `update-contacts` command, removed `debug-picker` command\r
+\r
+#### UpdatePanel Component\r
+- ✅ Created `UpdatePanel.tsx` — Inline form with contact header (name, photo/initials, status badge)\r
+- ✅ Fields: date picker (defaults today), interaction type dropdown, optional note textarea\r
+- ✅ Save triggers `updateFrontmatter()` + `appendToInteractionLog()`, then returns to grid\r
+\r
+#### Interaction Log Heading Fix\r
+- ✅ Added `interactionLogHeading` setting (Settings → Contacts → "Interaction log heading")\r
+- ✅ Updated `appendToInteractionLog` to use `includes()` — supports emoji headings like `## 📝 Interaction Log`\r
+\r
+#### Cleanup\r
+- ✅ Deleted `ContactPickerModal.ts` (replaced by OrbitHubModal)\r
+- ✅ Deleted `contact-picker-modal.test.ts`\r
+- ✅ Changed `ReactModal.root` from `private` → `protected`\r
+\r
+#### Tests (20 new, 333 total)\r
+\r
+| File | Tests | Covers |\r
+|------|-------|--------|\r
+| `orbit-hub-modal.test.ts` | 9 | Lifecycle, React root, CSS class, render content |\r
+| `update-panel.test.tsx` | 17 | Rendering, interactions, status variants |\r
+| `contact-manager.test.ts` | +3 | Emoji heading, custom heading, heading creation |\r
+| `contact-picker-modal.test.ts` | -8 | Removed (old modal deleted) |\r
+\r
+### Files Changed:\r
+\r
+**New (4):** `OrbitHubModal.ts`, `UpdatePanel.tsx`, `orbit-hub-modal.test.ts`, `update-panel.test.tsx`\r
+**Modified (8):** `ContactCard.tsx`, `ContactPickerGrid.tsx`, `ReactModal.ts`, `settings.ts`, `ContactManager.ts`, `main.ts`, `styles.css`, `contact-manager.test.ts`\r
+**Deleted (2):** `ContactPickerModal.ts`, `contact-picker-modal.test.ts`\r
+\r
+### Testing Notes:\r
+- 333/333 tests pass, build clean, deployed to test vault\r
+- Brad verified all 9 test points manually\r
+\r
+### Bugs Found:\r
+1. **Heading mismatch** — `appendToInteractionLog` hardcoded `## Interaction Log` but template uses emoji prefix. Fixed with configurable setting.\r
+\r
+### Blockers/Issues:\r
+- None\r
+\r
+---\r
+\r
 ## Next Session Prompt
 
 ```
-Phase 2 + 2.5 complete. Ready to begin Phase 3: Contact Picker Modal.
+Phase 4 + 4.5 complete. Ready to begin Phase 5: Edit Person & Update This Person.
 
 What was done last session:
-- ✅ ContactManager service (createContact, updateFrontmatter, appendToInteractionLog)
-- ✅ New Person schema, FolderSuggest, photo preview
-- ✅ "New Person" command wired end-to-end
-- ✅ 5 bugs fixed, 54 new tests (273 total), coverage ≥80% on all Phase 2 files
+- ✅ Orbit Hub modal (OrbitHubModal) — centralized contact management hub
+- ✅ UpdatePanel component — inline contact update form
+- ✅ interactionLogHeading setting — configurable heading for log injection
+- ✅ Deleted old ContactPickerModal (dead code)
+- ✅ 20 new tests (333 total), all passing
 - ✅ Deployed and manually verified in test vault
 
-Continue with Phase 3: Contact Picker Modal
+Continue with Phase 5: Edit Person & Update This Person
 Key files to reference:
 - docs/UX Overhaul - Implementation Plan.md
+- src/modals/OrbitHubModal.ts
+- src/components/UpdatePanel.tsx
 - src/services/ContactManager.ts
-- src/modals/OrbitFormModal.ts
-- src/services/OrbitIndex.ts
 ```
 
 ---
@@ -459,5 +514,33 @@ Infrastructure:
 - test-output.txt added to .gitignore
 ```
 
+### Phase 4 + 4.5
+```
+feat(hub): Phase 4 + 4.5 — Orbit Hub modal, UpdatePanel, and tests
 
+Orbit Hub:
+- OrbitHubModal replaces ContactPickerModal as centralized command modal
+- Two-panel state machine: contact grid and inline update panel
+- Action bar with Update, Add, Digest, Done buttons
+- Edit and Suggest Message disabled as future placeholders
+- ContactCard and ContactPickerGrid support selected state
 
+UpdatePanel:
+- Contact header with photo/initials, name, status badge
+- Date picker, interaction type dropdown, optional note textarea
+- Save triggers frontmatter update + interaction log append
+
+Bug Fix:
+- appendToInteractionLog uses configurable heading with includes() matching
+- New interactionLogHeading setting for emoji/custom heading support
+
+Cleanup:
+- Deleted ContactPickerModal.ts (replaced by OrbitHubModal)
+- Deleted contact-picker-modal.test.ts
+- ReactModal.root changed to protected for subclass access
+
+Tests (20 new, 333 total):
+- orbit-hub-modal.test.ts (9), update-panel.test.tsx (17)
+- contact-manager.test.ts (+3 heading tests)
+- Removed 8 old picker modal tests
+```

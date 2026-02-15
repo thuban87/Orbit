@@ -134,8 +134,8 @@ tags:
 - [x] Phase 2.5 — ContactManager & New Person Tests (+54 tests)
 - [x] Phase 3 — Contact Picker Modal (313 tests total)
 - [x] Phase 3.5 — Contact Picker Tests (+40 tests)
-- [ ] Phase 4 — Update Contacts Flow
-- [ ] Phase 4.5 — Update Contacts Tests
+- [x] Phase 4 — Update Contacts Flow (Orbit Hub, UpdatePanel, interactionLogHeading setting)
+- [x] Phase 4.5 — Update Contacts Tests (+20 tests, 333 total)
 - [ ] Phase 5 — Edit Person & Update This Person
 - [ ] Phase 5.5 — Edit & Update This Person Tests
 - [ ] Phase 6 — User Schema System

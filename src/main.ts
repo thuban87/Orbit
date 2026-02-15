@@ -4,7 +4,7 @@ import { OrbitIndex } from "./services/OrbitIndex";
 import { OrbitView, VIEW_TYPE_ORBIT } from "./views/OrbitView";
 import { LinkListener } from "./services/LinkListener";
 import { OrbitFormModal } from "./modals/OrbitFormModal";
-import { ContactPickerModal } from "./modals/ContactPickerModal";
+import { OrbitHubModal } from "./modals/OrbitHubModal";
 import { newPersonSchema } from "./schemas/new-person.schema";
 import { createContact } from "./services/ContactManager";
 
@@ -141,20 +141,13 @@ export default class OrbitPlugin extends Plugin {
             },
         });
 
-        // Temporary debug command for manual picker verification (remove in Phase 4)
+        // Register Update Contacts command (Orbit Hub)
         this.addCommand({
-            id: "debug-picker",
-            name: "Debug: Contact Picker",
+            id: "update-contacts",
+            name: "Update Contacts",
             callback: () => {
                 const contacts = this.index.getContactsByStatus();
-                const modal = new ContactPickerModal(
-                    this.app,
-                    this,
-                    contacts,
-                    (contact) => {
-                        new Notice(`Selected: ${contact.name}`);
-                    }
-                );
+                const modal = new OrbitHubModal(this, contacts);
                 modal.open();
             },
         });

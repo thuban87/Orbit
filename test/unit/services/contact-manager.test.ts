@@ -413,4 +413,62 @@ describe('appendToInteractionLog', () => {
 
         await appendToInteractionLog(app, file, 'Entry text');
     });
+
+    it('matches heading with emoji prefix using heading parameter', async () => {
+        const { app } = setupApp();
+        const file = new TFile();
+
+        app.vault.process.mockImplementation(
+            async (_f: TFile, fn: (data: string) => string) => {
+                const input = '# Alice\n\n## 📝 Interaction Log\n- 2025-01-10: Previous entry\n';
+                const result = fn(input);
+
+                // Should insert after the emoji heading, not create a new section
+                const lines = result.split('\n');
+                const headerIdx = lines.findIndex(l => l.includes('📝 Interaction Log'));
+                expect(headerIdx).toBeGreaterThan(-1);
+                expect(lines[headerIdx + 1]).toContain('Coffee catch-up');
+
+                // Should NOT create a duplicate heading
+                const headingCount = lines.filter(l => l.includes('Interaction Log')).length;
+                expect(headingCount).toBe(1);
+            }
+        );
+
+        await appendToInteractionLog(app, file, 'Coffee catch-up', 'Interaction Log');
+    });
+
+    it('respects custom heading parameter', async () => {
+        const { app } = setupApp();
+        const file = new TFile();
+
+        app.vault.process.mockImplementation(
+            async (_f: TFile, fn: (data: string) => string) => {
+                const input = '# Alice\n\n## Contact History\n- 2025-01-10: Previous\n';
+                const result = fn(input);
+
+                const lines = result.split('\n');
+                const headerIdx = lines.findIndex(l => l.includes('Contact History'));
+                expect(headerIdx).toBeGreaterThan(-1);
+                expect(lines[headerIdx + 1]).toContain('New entry');
+            }
+        );
+
+        await appendToInteractionLog(app, file, 'New entry', 'Contact History');
+    });
+
+    it('creates section with custom heading when not found', async () => {
+        const { app } = setupApp();
+        const file = new TFile();
+
+        app.vault.process.mockImplementation(
+            async (_f: TFile, fn: (data: string) => string) => {
+                const result = fn('# Alice\n\nSome content\n');
+                expect(result).toContain('## My Custom Log');
+                expect(result).toContain('Test entry');
+            }
+        );
+
+        await appendToInteractionLog(app, file, 'Test entry', 'My Custom Log');
+    });
 });

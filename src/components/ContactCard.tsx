@@ -11,6 +11,8 @@ interface ContactCardProps {
     mode?: "sidebar" | "picker";
     /** Callback when a contact is selected (picker mode only) */
     onSelect?: (contact: OrbitContact) => void;
+    /** Whether this card is currently selected (hub mode highlight) */
+    selected?: boolean;
 }
 
 /**
@@ -43,7 +45,7 @@ function stringToColor(str: string): string {
  * ContactCard - Individual contact avatar with status ring and name.
  * Hover shows Conversational Fuel tooltip. Right-click shows context menu.
  */
-export function ContactCard({ contact, mode = "sidebar", onSelect }: ContactCardProps) {
+export function ContactCard({ contact, mode = "sidebar", onSelect, selected }: ContactCardProps) {
     // Always call hook (React Rules of Hooks), returns null outside OrbitProvider
     const orbit = useOrbitOptional();
     const plugin = orbit?.plugin;
@@ -264,7 +266,7 @@ export function ContactCard({ contact, mode = "sidebar", onSelect }: ContactCard
         <>
             <div
                 ref={cardRef}
-                className="orbit-card"
+                className={`orbit-card${selected ? ' orbit-card--selected' : ''}`}
                 onClick={handleClick}
                 onContextMenu={handleContextMenu}
                 onMouseEnter={handleMouseEnter}
