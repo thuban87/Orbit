@@ -15,6 +15,8 @@ export interface OrbitSettings {
     contactsFolder: string;
     /** Heading text for the interaction log section (without ## prefix) */
     interactionLogHeading: string;
+    /** Folder containing user-authored schema files */
+    schemaFolder: string;
 }
 
 export const DEFAULT_SETTINGS: OrbitSettings = {
@@ -24,6 +26,7 @@ export const DEFAULT_SETTINGS: OrbitSettings = {
     templatePath: "System/Templates/Person Template.md",
     contactsFolder: "",
     interactionLogHeading: "Interaction Log",
+    schemaFolder: "",
 };
 
 export class OrbitSettingTab extends PluginSettingTab {
@@ -142,5 +145,41 @@ export class OrbitSettingTab extends PluginSettingTab {
                         await this.plugin.saveSettings();
                     })
             );
+
+        // ── Schemas Section ─────────────────────────────────────
+        new Setting(containerEl).setName("Schemas").setHeading();
+
+        // Schema Folder setting
+        new Setting(containerEl)
+            .setName("Schema folder")
+            .setDesc(
+                "Folder containing custom contact schemas. Leave empty to use only the built-in schema."
+            )
+            .addText((text) => {
+                new FolderSuggest(this.app, text.inputEl);
+                text
+                    .setPlaceholder("System/Orbit/Schemas")
+                    .setValue(this.plugin.settings.schemaFolder)
+                    .onChange(async (value) => {
+                        this.plugin.settings.schemaFolder = value.trim();
+                        await this.plugin.saveSettings();
+                    });
+            });
+
+        // Generate Example Schema button
+        new Setting(containerEl)
+            .setName("Generate example schema")
+            .setDesc(
+                "Creates a sample schema file in your schema folder to use as a starting point."
+            )
+            .addButton((button) => {
+                button
+                    .setButtonText("Generate")
+                    .onClick(async () => {
+                        if (this.plugin.schemaLoader) {
+                            await this.plugin.schemaLoader.generateExampleSchema();
+                        }
+                    });
+            });
     }
 }

@@ -662,3 +662,40 @@ Tests (37 new, 370 total):
 - Mock updates: renameFile, interactionLogHeading in factories
 ```
 
+### Phase 6 + 6.5
+```
+feat(schemas): Phase 6 + 6.5 — User Schema System with hybrid format
+
+SchemaLoader:
+- New loader.ts parses user-authored Markdown schemas from configurable folder
+- Hybrid format: flat frontmatter keys = simple text fields, optional ```fields code block for advanced field types (dropdowns, etc.)
+- Silent skip for non-schema files (no schema_id = not a schema)
+- Merges user schemas with built-in, validates, generates example schema
+- bodyTemplate extracted from markdown body for file creation
+
+Settings:
+- schemaFolder setting with FolderSuggest autocomplete
+- Generate Example Schema button creates clean flat-frontmatter example
+
+Commands:
+- new-contact-from-schema with FuzzySuggestModal picker
+- Single-schema optimization: skips picker when only one schema available
+
+ContactManager:
+- schema.output.path used for file placement (placeholder substitution)
+- bodyTemplate from user schemas used instead of vault template
+- parentFolder derived from resolved filePath for folder creation
+
+Types:
+- SchemaDef extended with optional bodyTemplate field
+
+Tests (32 new, 402 total):
+- loader.test.ts (25): parsing, validation, merging, silent skip, hybrid mode
+- schema-settings.test.ts (5): settings rendering, generate button
+- user-schema-flow.test.ts (3): end-to-end schema-to-contact flow (reworked to 3 focused tests)
+
+Mock improvements:
+- polyfillEl exported with createEl/createDiv for settings tests
+- FuzzySuggestModal mock added
+```
+

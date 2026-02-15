@@ -138,8 +138,8 @@ tags:
 - [x] Phase 4.5 — Update Contacts Tests (+20 tests, 333 total)
 - [x] Phase 5 — Edit Person & Update This Person (+37 tests, 370 total)
 - [x] Phase 5.5 — Edit & Update This Person Tests
-- [ ] Phase 6 — User Schema System
-- [ ] Phase 6.5 — User Schema System Tests
+- [x] Phase 6 — User Schema System (+32 tests, 402 total)
+- [x] Phase 6.5 — User Schema System Tests
 - [ ] Phase 7 — AI Provider Architecture
 - [ ] Phase 7.5 — AI Provider Tests
 - [ ] Phase 8 — AI Message Suggest Feature

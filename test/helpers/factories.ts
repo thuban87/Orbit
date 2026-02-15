@@ -70,6 +70,7 @@ export function createSettings(overrides: Partial<OrbitSettings> = {}): OrbitSet
         templatePath: overrides.templatePath ?? 'System/Templates/Person Template.md',
         contactsFolder: overrides.contactsFolder ?? '',
         interactionLogHeading: overrides.interactionLogHeading ?? 'Interaction Log',
+        schemaFolder: overrides.schemaFolder ?? '',
     };
 }
 

@@ -729,83 +729,112 @@ For the picker context, we need to:
 
 ---
 
-## Phase 6: User Schema System
+## Phase 6: User Schema System ✅
 
 **Goal:** Allow users to create their own schemas as Markdown files in the vault.
 
 ### Deliverables
 - `schemas/loader.ts` — Schema loader that reads both TypeScript (built-in) and Markdown (user) schemas
-- Markdown schema parser: reads YAML frontmatter for field definitions, body as output template
-- Schema validation: helpful error notices for malformed schemas
+- Hybrid schema format: flat frontmatter for simple fields, optional `fields` code block for advanced types
+- Silent skip: files without `schema_id` are ignored (no notices), allowing non-schema files to coexist in the folder
+- Schema validation: helpful error notices only for files that have `schema_id` but are missing `schema_title`
 - Schema registry: merged list of built-in + user schemas
-- Settings: configurable schema folder path (default: `System/Orbit/Schemas/`) — use `setHeading()` for section
-- "Generate Example Schema" button in settings — creates a template markdown file with all field types
-- Command: `new-contact-from-schema` (displayed as "Orbit: New Contact from Schema") — opens a picker to select which schema, then the form
-  - **Single-schema optimization**: If only one schema is available (built-in or user), skip the picker and open the form directly
+- Settings: configurable schema folder path — use `setHeading()` for section, `FolderSuggest` for autocomplete
+- "Generate Example Schema" button in settings — creates a flat-frontmatter example file
+- Command: `new-contact-from-schema` (displayed as "Orbit: New contact from schema") — opens a picker to select which schema, then the form
+  - **Single-schema optimization**: If only one schema is available, skip the picker and open the form directly
+- `ContactManager` uses `schema.output.path` for file placement with `{{placeholder}}` substitution
 
-### User Schema Format
+### User Schema Format (Hybrid)
 
 > [!NOTE]
-> Simplified format vs. original plan — field definitions live directly in YAML frontmatter (one parsing layer). The markdown body serves as the output template. This is more Obsidian-native and easier for users to debug.
+> Hybrid format — flat frontmatter keys for simple fields (most users), optional `fields` code block for advanced field types. Non-reserved frontmatter keys become text fields automatically. Files without `schema_id` in frontmatter are silently skipped.
+
+**Simple mode** (flat frontmatter — no code needed):
 
 ```markdown
 ---
 schema_id: conference-contact
-schema_title: Add Conference Contact
-cssClass: orbit-conference
+schema_title: Conference Contact
 submit_label: Create Contact
 output_path: "People/Professional/{{name}}.md"
-fields:
-  - key: name
-    type: text
-    label: Name
-    required: true
-  - key: company
-    type: text
-    label: Company
-  - key: frequency
-    type: dropdown
-    label: Check-in Frequency
-    options: [Weekly, Monthly, Quarterly]
-    default: Monthly
+name:
+company:
+frequency: Monthly
+birthday:
+notes:
 ---
 # {{name}}
 
 > Company: {{company}}
 
 ## Notes
-- 
+-
 ```
 
-### Schema Loader Logic
-1. On plugin load, scan configured schema folder using `vault.getFolderByPath(schemaFolder)` → iterate `.children` (not `getMarkdownFiles()`)
-2. Parse each file's YAML frontmatter into a `SchemaDef`
-3. Validate field definitions (known types, required fields present, etc.)
-4. Merge with built-in schemas into a unified registry
-5. Re-scan when settings change or files in schema folder change
-6. All paths processed through `normalizePath()`
+**Advanced mode** (optional `fields` code block overrides flat fields):
 
-### Files to Create/Modify
+````markdown
+---
+schema_id: conference-contact
+schema_title: Conference Contact
+output_path: "People/Professional/{{name}}.md"
+name:
+company:
+frequency: Monthly
+---
+
+```fields
+- key: frequency
+  type: dropdown
+  label: Check-in frequency
+  options: [Weekly, Monthly, Quarterly, Yearly]
+  default: Monthly
+```
+
+# {{name}}
+````
+
+**Reserved frontmatter keys** (metadata, not form fields): `schema_id`, `schema_title`, `output_path`, `submit_label`, `cssClass`
+
+**Merge rules:**
+1. All non-reserved frontmatter keys → simple text fields (label auto-generated from key)
+2. `fields` code block (if present) → advanced fields that override flat ones by matching key
+3. Body after the code block → output template (`bodyTemplate`)
+
+### Schema Loader Logic
+1. On plugin load, scan configured schema folder using `vault.getFolderByPath(schemaFolder)` → iterate `.children`
+2. Skip files without `schema_id` (silent — no error notices)
+3. Parse flat frontmatter keys into text fields, extract optional `fields` code block for advanced overrides
+4. Merge flat + advanced fields, extract body template
+5. Merge with built-in schemas into a unified registry (built-in IDs take precedence)
+6. Re-scan when settings change
+7. All paths processed through `normalizePath()`
+
+### Files Created/Modified
 
 | File | Action |
 |------|--------|
-| `src/schemas/loader.ts` | **NEW** — Dual-format schema loader + validator (uses `getFolderByPath()`) |
-| `src/settings.ts` | **MODIFY** — Add schema folder path (use `setHeading()`), "Generate Example" button |
-| `src/main.ts` | **MODIFY** — Register `new-contact-from-schema` command, initialize loader |
-| `styles.css` | **MODIFY** — Styles for schema picker (if needed) |
+| `src/schemas/loader.ts` | **NEW** — Hybrid schema loader + validator |
+| `src/schemas/types.ts` | **MODIFY** — Added `bodyTemplate?: string` to `SchemaDef` |
+| `src/settings.ts` | **MODIFY** — Added schema folder setting, Generate Example button |
+| `src/main.ts` | **MODIFY** — SchemaLoader init, SchemaPickerModal, `new-contact-from-schema` command |
+| `src/services/ContactManager.ts` | **MODIFY** — `schema.output.path` support, `bodyTemplate` support |
+| `test/mocks/obsidian.ts` | **MODIFY** — FuzzySuggestModal mock, polyfillEl with createEl/createDiv |
+| `test/helpers/factories.ts` | **MODIFY** — Added `schemaFolder` to settings factory |
 
 ### Verification
 - Build succeeds
 - Place a test schema `.md` in the configured folder → it appears in the schema picker
-- Creating a contact from a user schema produces correctly formatted output
-- Malformed YAML shows a helpful error notice (not a crash)
-- "Generate Example Schema" creates a working template file
+- Creating a contact from a user schema produces correctly formatted output at the schema's `output_path`
+- Non-schema files (person templates, etc.) in the schema folder are silently ignored
+- "Generate Example Schema" creates a working flat-frontmatter template file
 - Built-in schemas still work alongside user schemas
 - Schema loader uses `getFolderByPath()` (not full vault scan)
 
 ---
 
-## Phase 6.5: User Schema System Tests
+## Phase 6.5: User Schema System Tests ✅
 
 **Goal:** ≥80% unit + integration coverage on Phase 6 code.
 

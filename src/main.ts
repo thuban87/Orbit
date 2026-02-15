@@ -1,4 +1,4 @@
-import { Plugin, TFile, WorkspaceLeaf, MarkdownView, Notice } from "obsidian";
+import { Plugin, TFile, WorkspaceLeaf, MarkdownView, Notice, FuzzySuggestModal } from "obsidian";
 import { OrbitSettingTab, OrbitSettings, DEFAULT_SETTINGS } from "./settings";
 import { OrbitIndex } from "./services/OrbitIndex";
 import { OrbitView, VIEW_TYPE_ORBIT } from "./views/OrbitView";
@@ -7,15 +7,47 @@ import { OrbitFormModal } from "./modals/OrbitFormModal";
 import { OrbitHubModal } from "./modals/OrbitHubModal";
 import { newPersonSchema } from "./schemas/new-person.schema";
 import { createContact } from "./services/ContactManager";
+import { SchemaLoader } from "./schemas/loader";
+import type { SchemaDef } from "./schemas/types";
+
+/**
+ * FuzzySuggestModal for picking a schema from the registry.
+ */
+class SchemaPickerModal extends FuzzySuggestModal<SchemaDef> {
+    private schemas: SchemaDef[];
+    private onChoose: (schema: SchemaDef) => void;
+
+    constructor(app: any, schemas: SchemaDef[], onChoose: (schema: SchemaDef) => void) {
+        super(app);
+        this.schemas = schemas;
+        this.onChoose = onChoose;
+    }
+
+    getItems(): SchemaDef[] {
+        return this.schemas;
+    }
+
+    getItemText(schema: SchemaDef): string {
+        return schema.title;
+    }
+
+    onChooseItem(schema: SchemaDef): void {
+        this.onChoose(schema);
+    }
+}
 
 export default class OrbitPlugin extends Plugin {
     settings: OrbitSettings;
     index: OrbitIndex;
     linkListener: LinkListener;
+    schemaLoader: SchemaLoader;
 
     async onload() {
         // Load settings
         await this.loadSettings();
+
+        // Initialize the schema loader
+        this.schemaLoader = new SchemaLoader(this.app, this.settings.schemaFolder);
 
         // Initialize the contact index (will scan when cache is ready)
         this.index = new OrbitIndex(this.app, this.settings);
@@ -33,10 +65,12 @@ export default class OrbitPlugin extends Plugin {
         if ((this.app.metadataCache as any).initialized) {
             // Already initialized, scan immediately
             await this.index.initialize();
+            await this.schemaLoader.loadSchemas();
         } else {
             // Wait for the "resolved" event (fires once when cache is ready)
             const resolvedHandler = async () => {
                 await this.index.initialize();
+                await this.schemaLoader.loadSchemas();
                 this.index.trigger("change"); // Update UI
             };
             this.registerEvent(
@@ -152,6 +186,51 @@ export default class OrbitPlugin extends Plugin {
             },
         });
 
+        // Register New Contact from Schema command
+        this.addCommand({
+            id: "new-contact-from-schema",
+            name: "New Contact from Schema",
+            callback: () => {
+                const schemas = this.schemaLoader.getSchemas();
+                if (schemas.length === 0) {
+                    new Notice("No schemas available");
+                    return;
+                }
+
+                const openForm = (schema: SchemaDef) => {
+                    const modal = new OrbitFormModal(
+                        this.app,
+                        schema,
+                        async (data) => {
+                            await createContact(
+                                this.app,
+                                schema,
+                                data,
+                                this.settings
+                            );
+                            await this.index.scanVault();
+                            this.index.trigger("change");
+                        }
+                    );
+                    modal.open();
+                };
+
+                // Single-schema optimization: skip picker
+                if (schemas.length === 1) {
+                    openForm(schemas[0]);
+                    return;
+                }
+
+                // Multiple schemas: show picker
+                const picker = new SchemaPickerModal(
+                    this.app,
+                    schemas,
+                    openForm
+                );
+                picker.open();
+            },
+        });
+
         // Register Update This Person command (direct update for active file)
         this.addCommand({
             id: "update-this-person",
@@ -260,6 +339,9 @@ export default class OrbitPlugin extends Plugin {
         // Update link listener settings
         this.linkListener.updateSettings(this.settings);
         this.linkListener.clearCache();
+        // Update schema loader settings and rescan
+        this.schemaLoader.updateSchemaFolder(this.settings.schemaFolder);
+        await this.schemaLoader.rescan();
     }
 
     /**

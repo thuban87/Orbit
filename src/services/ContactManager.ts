@@ -87,20 +87,29 @@ export async function createContact(
     formData: Record<string, any>,
     settings: OrbitSettings
 ): Promise<TFile> {
-    // 1. Load template (fall back to default)
-    let template = DEFAULT_TEMPLATE;
-    if (settings.templatePath) {
-        const templateFile = app.vault.getAbstractFileByPath(settings.templatePath);
-        if (templateFile instanceof TFile) {
-            template = await app.vault.read(templateFile);
-            Logger.debug('ContactManager', `Loaded template from ${settings.templatePath}`);
-        } else {
-            Logger.warn('ContactManager', `Template not found at "${settings.templatePath}", using default`);
-        }
-    }
+    // 1. Determine body template
+    let body: string;
 
-    // 2. Extract body only (strip any frontmatter from template)
-    let body = stripFrontmatter(template);
+    if (schema.bodyTemplate) {
+        // User schema provides its own body template
+        body = schema.bodyTemplate;
+        Logger.debug('ContactManager', 'Using body template from schema');
+    } else {
+        // Built-in schema — load template from vault (fall back to default)
+        let template = DEFAULT_TEMPLATE;
+        if (settings.templatePath) {
+            const templateFile = app.vault.getAbstractFileByPath(settings.templatePath);
+            if (templateFile instanceof TFile) {
+                template = await app.vault.read(templateFile);
+                Logger.debug('ContactManager', `Loaded template from ${settings.templatePath}`);
+            } else {
+                Logger.warn('ContactManager', `Template not found at "${settings.templatePath}", using default`);
+            }
+        }
+
+        // Extract body only (strip any frontmatter from template)
+        body = stripFrontmatter(template);
+    }
 
     // Replace {{name}} in body (for headings like "# {{name}}")
     const contactName = String(formData.name || 'Untitled');
@@ -109,14 +118,28 @@ export async function createContact(
     // Replace any remaining {{key}} placeholders in body with empty string
     body = body.replace(/\{\{[^}]+\}\}/g, '');
 
-    // 3. Build file path: {contactsFolder}/{category}/{name}.md
-    const category = String(formData.category || '');
-    const baseFolder = settings.contactsFolder || 'People';
-    const folder = category ? `${baseFolder}/${category}` : baseFolder;
-    const filePath = buildContactPath(folder, contactName);
+    // 3. Build file path from schema output path or default logic
+    let filePath: string;
+    if (schema.output?.path) {
+        // User/built-in schema with explicit output path — replace placeholders
+        let resolvedPath = schema.output.path;
+        for (const [key, value] of Object.entries(formData)) {
+            resolvedPath = resolvedPath.split(`{{${key}}}`).join(String(value || ''));
+        }
+        // Clean up any remaining unreplaced placeholders
+        resolvedPath = resolvedPath.replace(/\{\{[^}]+\}\}/g, '');
+        filePath = normalizePath(resolvedPath);
+    } else {
+        // Fallback: {contactsFolder}/{category}/{name}.md
+        const category = String(formData.category || '');
+        const baseFolder = settings.contactsFolder || 'People';
+        const folder = category ? `${baseFolder}/${category}` : baseFolder;
+        filePath = buildContactPath(folder, contactName);
+    }
 
     // 4. Ensure parent folder exists (auto-creates category subfolders)
-    await ensureFolderExists(app, folder);
+    const parentFolder = filePath.substring(0, filePath.lastIndexOf('/'));
+    if (parentFolder) await ensureFolderExists(app, parentFolder);
 
     // 5. Create the file with empty frontmatter + body
     const initialContent = `---\n---\n${body}`;

@@ -142,12 +142,24 @@ export class Plugin {
  * Polyfill Obsidian-specific HTMLElement methods for jsdom.
  * Obsidian extends HTMLElement with helpers like empty(), setText(), addClass(), removeClass().
  */
-function polyfillEl(el: HTMLElement): HTMLElement {
+export function polyfillEl(el: HTMLElement): HTMLElement {
     if (!(el as any)._obsidianPolyfilled) {
         (el as any).empty = function () { this.innerHTML = ''; };
         (el as any).setText = function (text: string) { this.textContent = text; };
         (el as any).addClass = function (cls: string) { this.classList.add(cls); };
         (el as any).removeClass = function (cls: string) { this.classList.remove(cls); };
+        (el as any).createEl = function (tag: string, opts?: { text?: string; cls?: string; attr?: Record<string, string> }) {
+            const child = document.createElement(tag);
+            polyfillEl(child);
+            if (opts?.text) child.textContent = opts.text;
+            if (opts?.cls) child.className = opts.cls;
+            if (opts?.attr) Object.entries(opts.attr).forEach(([k, v]) => child.setAttribute(k, v));
+            this.appendChild(child);
+            return child;
+        };
+        (el as any).createDiv = function (opts?: { text?: string; cls?: string }) {
+            return (this as any).createEl('div', opts);
+        };
         (el as any)._obsidianPolyfilled = true;
     }
     return el;
@@ -291,6 +303,20 @@ export class ItemView {
 
 export class MarkdownView {
     file: TFile | null = null;
+}
+
+export class FuzzySuggestModal<T> {
+    app: any;
+
+    constructor(app?: any) {
+        this.app = app ?? createMockApp();
+    }
+
+    getItems(): T[] { return []; }
+    getItemText(_item: T): string { return ''; }
+    onChooseItem(_item: T, _evt: MouseEvent | KeyboardEvent): void { }
+    open(): void { }
+    close(): void { }
 }
 
 // ─── Utility Functions ──────────────────────────────────────────

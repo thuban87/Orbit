@@ -62,6 +62,8 @@ export interface SchemaDef {
         /** Template path for file creation (e.g., "People/{{category}}/{{name}}.md") */
         path: string;
     };
+    /** Markdown body template from user schema files (built-in schemas leave undefined) */
+    bodyTemplate?: string;
 }
 
 /**
