@@ -10,6 +10,7 @@
 import { requestUrl } from 'obsidian';
 import { Logger } from '../utils/logger';
 import type { OrbitSettings } from '../settings';
+import type { OrbitContact } from '../types';
 
 // ─── Default Prompt Template ────────────────────────────────────
 
@@ -22,17 +23,120 @@ export const DEFAULT_PROMPT_TEMPLATE = `You are a personal relationship assistan
 **Last interaction:** {{lastInteraction}}
 
 **Conversational Fuel:**
-{{conversationalFuel}}
+{{Conversational Fuel}}
 
 **Small Talk Data:**
-{{smallTalkData}}
+{{Small Talk Data}}
 
 Guidelines:
 - Keep it casual and authentic — not robotic
 - Reference specific topics from their Conversational Fuel or Small Talk Data if available
 - Match the tone to the relationship category (family = warm, work = professional but friendly)
 - Keep it under 3-4 sentences
-- Don't mention that you're an AI or that you're using data about them`;
+- Don't mention that you're an AI or that you're using data about them
+- No em dashes at all`;
+
+// ─── Context Extraction & Prompt Assembly ───────────────────────
+
+/**
+ * Structured context extracted from a contact's file for AI prompt assembly.
+ */
+export interface MessageContext {
+    name: string;
+    category: string;
+    daysSinceContact: number;
+    socialBattery: string;
+    lastInteraction: string;
+}
+
+/**
+ * Extract a named section from markdown file content.
+ * Looks for a `## ...SectionName` heading (tolerates emoji prefixes and extra words)
+ * and captures all content until the next `##` heading or EOF.
+ *
+ * @param content - Full markdown file content
+ * @param sectionName - Heading text to search for (without `##` prefix)
+ * @returns Section content (trimmed) or "None available"
+ */
+export function extractSection(content: string, sectionName: string): string {
+    // Match ## headings that contain the section name anywhere in the line
+    // This handles emojis, prefixes like "The", etc.
+    const escaped = sectionName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const pattern = new RegExp(
+        `^##\\s+.*${escaped}.*$`,
+        'm'
+    );
+    const match = content.match(pattern);
+    if (!match || match.index === undefined) {
+        return 'None available';
+    }
+
+    const startIdx = match.index + match[0].length;
+    const rest = content.slice(startIdx);
+
+    // Find the next ## heading (end of this section)
+    const nextHeading = rest.match(/^##\s+/m);
+    const sectionContent = nextHeading && nextHeading.index !== undefined
+        ? rest.slice(0, nextHeading.index)
+        : rest;
+
+    const trimmed = sectionContent.trim();
+    return trimmed || 'None available';
+}
+
+/**
+ * Extract structured context from a contact and their file content.
+ *
+ * @param contact - OrbitContact with metadata
+ * @param fileContent - Full markdown content of the contact's file
+ * @returns MessageContext for prompt assembly
+ */
+export function extractContext(contact: OrbitContact, fileContent: string): MessageContext {
+    // Format last interaction info
+    let lastInteraction = 'No previous interaction recorded';
+    if (contact.lastContact) {
+        const dateStr = contact.lastContact.toISOString().split('T')[0];
+        const type = contact.lastInteraction ?? 'unknown';
+        lastInteraction = `${dateStr} (${type})`;
+    }
+
+    return {
+        name: contact.name,
+        category: contact.category ?? 'Uncategorized',
+        daysSinceContact: contact.daysSinceContact,
+        socialBattery: contact.socialBattery ?? 'Unknown',
+        lastInteraction,
+    };
+}
+
+/**
+ * Assemble a prompt by replacing {{placeholders}} in the template with context values.
+ *
+ * Known contact fields (name, category, etc.) are replaced first.
+ * Any remaining {{...}} placeholders are treated as section names and
+ * extracted dynamically from the contact's markdown file content.
+ *
+ * @param template - Prompt template with {{placeholders}}
+ * @param context - MessageContext with known contact field values
+ * @param fileContent - Full markdown content of the contact's file
+ * @returns Assembled prompt string
+ */
+export function assemblePrompt(template: string, context: MessageContext, fileContent: string): string {
+    // Step 1: Replace known contact fields
+    let result = template
+        .replace(/\{\{name\}\}/g, context.name)
+        .replace(/\{\{category\}\}/g, context.category)
+        .replace(/\{\{daysSinceContact\}\}/g, String(context.daysSinceContact))
+        .replace(/\{\{socialBattery\}\}/g, context.socialBattery)
+        .replace(/\{\{lastInteraction\}\}/g, context.lastInteraction);
+
+    // Step 2: Dynamically resolve any remaining {{...}} placeholders as section names
+    result = result.replace(/\{\{([^}]+)\}\}/g, (_match, sectionName: string) => {
+        return extractSection(fileContent, sectionName.trim());
+    });
+
+    return result;
+}
 
 // ─── Provider Interface ─────────────────────────────────────────
 
@@ -237,7 +341,7 @@ export class AnthropicProvider implements AiProvider {
 
 /** Curated list of Google Gemini budget/mid-tier models */
 const GOOGLE_MODELS = [
-    'gemini-3.0-flash',
+    'gemini-3-flash-preview',
     'gemini-2.5-flash',
 ];
 
@@ -369,18 +473,22 @@ export class AiService {
     refreshProviders(settings: OrbitSettings): void {
         this.providers.clear();
 
+        // Helper: get API key for a specific provider (per-provider → legacy fallback)
+        const keyFor = (provider: string): string =>
+            settings.aiApiKeys?.[provider] ?? settings.aiApiKey ?? '';
+
         // Ollama — always registered (availability checked at runtime)
         this.providers.set('ollama', new OllamaProvider());
 
-        // Cloud providers — use API key from settings
-        this.providers.set('openai', new OpenAiProvider(settings.aiApiKey));
-        this.providers.set('anthropic', new AnthropicProvider(settings.aiApiKey));
-        this.providers.set('google', new GoogleProvider(settings.aiApiKey));
+        // Cloud providers — each gets its own API key
+        this.providers.set('openai', new OpenAiProvider(keyFor('openai')));
+        this.providers.set('anthropic', new AnthropicProvider(keyFor('anthropic')));
+        this.providers.set('google', new GoogleProvider(keyFor('google')));
 
         // Custom — use endpoint URL + API key + model from settings
         this.providers.set('custom', new CustomProvider(
             settings.aiCustomEndpoint,
-            settings.aiApiKey,
+            keyFor('custom'),
             settings.aiCustomModel,
         ));
     }

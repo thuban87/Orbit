@@ -142,8 +142,8 @@ tags:
 - [x] Phase 6.5 — User Schema System Tests
 - [x] Phase 7 — AI Provider Architecture (AiService + 5 providers + settings UI)
 - [x] Phase 7.5 — AI Provider Tests (+100 tests, 502 total)
-- [ ] Phase 8 — AI Message Suggest Feature
-- [ ] Phase 8.5 — AI Message Suggest Tests
+- [x] Phase 8 — AI Message Suggest Feature (AiResultModal, AiResult component, context extraction, dynamic placeholders)
+- [x] Phase 8.5 — AI Message Suggest Tests (+71 tests, 566 total)
 - [ ] Phase 9 — Debug Logging System
 - [ ] Phase 9.5 — Debug Logging Tests
 - [ ] Phase 10 — Polish, Integration & Final Settings

@@ -15,12 +15,14 @@ import { Notice } from 'obsidian';
 import React from 'react';
 import { ReactModal } from './ReactModal';
 import { OrbitFormModal } from './OrbitFormModal';
+import { AiResultModal } from './AiResultModal';
 import { ContactPickerGrid } from '../components/ContactPickerGrid';
 import { UpdatePanel } from '../components/UpdatePanel';
 import { OrbitProvider } from '../context/OrbitContext';
 import { newPersonSchema } from '../schemas/new-person.schema';
 import { editPersonSchema } from '../schemas/edit-person.schema';
 import { updateFrontmatter, appendToInteractionLog, createContact } from '../services/ContactManager';
+import { extractContext, assemblePrompt } from '../services/AiService';
 import { Logger } from '../utils/logger';
 import type { OrbitContact, LastInteractionType } from '../types';
 import type OrbitPlugin from '../main';
@@ -248,6 +250,48 @@ export class OrbitHubModal extends ReactModal {
         }
     }
 
+    /** Generate an AI message suggestion for the selected contact */
+    private async handleSuggest(): Promise<void> {
+        if (!this.selectedContact) return;
+
+        if (this.plugin.settings.aiProvider === 'none') {
+            new Notice('AI provider not configured. Go to Settings → AI provider.');
+            return;
+        }
+
+        const contact = this.selectedContact;
+        const template = this.plugin.settings.aiPromptTemplate;
+
+        // Build the regenerate callback
+        const regenerate = async (): Promise<string> => {
+            const content = await this.plugin.app.vault.read(contact.file);
+            const ctx = extractContext(contact, content);
+            const p = assemblePrompt(template, ctx, content);
+            return this.plugin.aiService.generate(this.plugin.settings, p);
+        };
+
+        // Open modal immediately in loading state
+        const modal = new AiResultModal(this.plugin, contact, regenerate);
+        modal.open();
+
+        try {
+            // Read the contact's file content
+            const fileContent = await this.plugin.app.vault.read(contact.file);
+
+            // Extract context and assemble prompt
+            const context = extractContext(contact, fileContent);
+            const prompt = assemblePrompt(template, context, fileContent);
+
+            // Generate the message
+            const message = await this.plugin.aiService.generate(this.plugin.settings, prompt);
+            modal.setMessage(message);
+        } catch (error) {
+            const errorMsg = error instanceof Error ? error.message : 'AI generation failed';
+            modal.setError(errorMsg);
+            Logger.error('OrbitHubModal', 'AI suggest failed', error);
+        }
+    }
+
     // ── Render ──────────────────────────────────────────────────
 
     renderContent(): React.ReactElement {
@@ -292,8 +336,13 @@ export class OrbitHubModal extends ReactModal {
                     }, '📊 Digest'),
                     React.createElement('button', {
                         className: 'orbit-button',
-                        disabled: true,
-                        title: 'Coming in a future update',
+                        disabled: !this.selectedContact || this.plugin.settings.aiProvider === 'none',
+                        onClick: () => this.handleSuggest(),
+                        title: this.plugin.settings.aiProvider === 'none'
+                            ? 'AI provider not configured'
+                            : this.selectedContact
+                                ? `Suggest message for ${this.selectedContact.name}`
+                                : 'Select a contact first',
                     }, '💬 Suggest'),
                 ),
                 React.createElement('button', {

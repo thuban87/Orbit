@@ -741,3 +741,50 @@ Mock improvements:
 - AI settings defaults added to createSettings factory
 ```
 
+### Phase 8 + 8.5
+```
+Date: 2026-02-16
+Focus: AI Message Suggest Feature — Implementation + Polish + Tests
+
+Completed:
+- [x] AiResultModal (extends ReactModal) — displays AI-generated message suggestions
+- [x] AiResult.tsx — React component: contact header, avatar with photo/initials fallback, message display, loading spinner, Copy/Regenerate/Dismiss buttons
+- [x] Context extraction: extractContext() pulls name, category, daysSinceContact, socialBattery, lastInteraction from OrbitContact
+- [x] Prompt assembly: assemblePrompt() fills known fields + dynamically resolves any {{Section Name}} placeholders from contact's markdown file
+- [x] extractSection() regex handles emoji prefixes and extra words in headings (e.g., ## 🗣️ Conversational Fuel)
+- [x] "Suggest message" action added to OrbitHubModal contact context menu
+- [x] Per-provider API keys (aiApiKeys map) with legacy aiApiKey fallback
+- [x] AI model names displayed in settings (not just IDs)
+- [x] Loading spinner, avatar error fallback, copy notice, em dash guideline
+- [x] Dynamic placeholder system — any {{Section Name}} in prompt template extracts matching section from contact file
+- [x] Phase 7.5 test updated for new placeholder names
+- [x] Phase 8.5 tests: 71 new tests (566 total, 34 files)
+
+Files Changed:
+- src/services/AiService.ts (MODIFIED — extractContext, assemblePrompt, extractSection, DEFAULT_PROMPT_TEMPLATE, per-provider keys)
+- src/modals/OrbitHubModal.ts (MODIFIED — suggest message action, assemblePrompt call with fileContent)
+- src/modals/AiResultModal.ts (NEW — ReactModal shell for AI result display)
+- src/components/AiResult.tsx (NEW — React component for message display)
+- src/settings.ts (MODIFIED — per-provider API key map, model name display)
+- styles.css (MODIFIED — AI result modal styles, loading spinner)
+- test/helpers/factories.ts (MODIFIED — aiApiKeys default)
+- test/unit/services/ai-service.test.ts (MODIFIED — placeholder name update)
+- test/integration/ai-provider-flow.test.ts (MODIFIED — minor adjustment)
+- test/unit/services/ai-context.test.ts (NEW — 21 tests for extractSection)
+- test/unit/services/ai-prompt.test.ts (NEW — 22 tests for extractContext + assemblePrompt)
+- test/unit/components/ai-result.test.tsx (NEW — 16 tests for AiResult component)
+- test/integration/ai-suggest-flow.test.ts (NEW — 12 integration tests)
+
+Testing: 566 tests pass (34 files), npm run build succeeds
+Deployed: test vault via npm run deploy:test
+
+Bugs Fixed:
+- extractSection regex too strict — didn't match headings with emoji prefixes (## 🗣️ Conversational Fuel)
+- Placeholder mismatch — camelCase {{conversationalFuel}} didn't match actual heading names; switched to {{Conversational Fuel}}
+- Factory ?? operator silently ignored undefined category overrides in tests
+
+Next Steps:
+- Phase 9: Debug Logging System
+- Phase 9.5: Debug Logging Tests
+```
+

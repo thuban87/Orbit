@@ -113,7 +113,7 @@ describe('AI generation flow', () => {
         const settings = createSettings({
             aiProvider: 'google',
             aiApiKey: 'test-key',
-            aiModel: 'gemini-3.0-flash',
+            aiModel: 'gemini-3-flash-preview',
         });
         service.refreshProviders(settings);
 

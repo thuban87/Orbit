@@ -73,6 +73,7 @@ export function createSettings(overrides: Partial<OrbitSettings> = {}): OrbitSet
         schemaFolder: overrides.schemaFolder ?? '',
         aiProvider: overrides.aiProvider ?? 'none',
         aiApiKey: overrides.aiApiKey ?? '',
+        aiApiKeys: overrides.aiApiKeys ?? {},
         aiModel: overrides.aiModel ?? '',
         aiPromptTemplate: overrides.aiPromptTemplate ?? 'Test prompt for {{name}}',
         aiCustomEndpoint: overrides.aiCustomEndpoint ?? '',

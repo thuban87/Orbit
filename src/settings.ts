@@ -26,8 +26,10 @@ export interface OrbitSettings {
     schemaFolder: string;
     /** Active AI provider ('none' = disabled) */
     aiProvider: AiProviderType;
-    /** API key for current cloud provider (stored in data.json) */
+    /** @deprecated Use aiApiKeys instead. Kept for backward compatibility migration. */
     aiApiKey: string;
+    /** Per-provider API keys stored as { providerType: key } */
+    aiApiKeys: Record<string, string>;
     /** Selected model name */
     aiModel: string;
     /** Prompt template with {{placeholder}} variables */
@@ -48,6 +50,7 @@ export const DEFAULT_SETTINGS: OrbitSettings = {
     schemaFolder: "",
     aiProvider: "none",
     aiApiKey: "",
+    aiApiKeys: {},
     aiModel: "",
     aiPromptTemplate: DEFAULT_PROMPT_TEMPLATE,
     aiCustomEndpoint: "",
@@ -270,6 +273,10 @@ export class OrbitSettingTab extends PluginSettingTab {
 
         // API key — shown for cloud providers only
         if (CLOUD_PROVIDERS.includes(currentProvider)) {
+            // Get the per-provider key (fall back to legacy aiApiKey for migration)
+            const currentKey = this.plugin.settings.aiApiKeys[currentProvider]
+                ?? this.plugin.settings.aiApiKey ?? '';
+
             new Setting(containerEl)
                 .setName("API key")
                 .setDesc(
@@ -280,9 +287,13 @@ export class OrbitSettingTab extends PluginSettingTab {
                     text.inputEl.autocomplete = 'off';
                     text
                         .setPlaceholder("sk-...")
-                        .setValue(this.plugin.settings.aiApiKey)
+                        .setValue(currentKey)
                         .onChange(async (value) => {
-                            this.plugin.settings.aiApiKey = value.trim();
+                            const trimmed = value.trim();
+                            // Save to per-provider keys
+                            this.plugin.settings.aiApiKeys[currentProvider] = trimmed;
+                            // Also keep legacy field in sync for backward compat
+                            this.plugin.settings.aiApiKey = trimmed;
                             await this.plugin.saveSettings();
                         });
                 });
@@ -329,12 +340,17 @@ export class OrbitSettingTab extends PluginSettingTab {
                         const provider = aiService.getProvider(currentProvider);
                         if (provider) {
                             // listModels is async — populate asynchronously
-                            void provider.listModels().then((models) => {
+                            void provider.listModels().then(async (models) => {
                                 for (const model of models) {
                                     dropdown.addOption(model, model);
                                 }
-                                if (this.plugin.settings.aiModel) {
+                                if (this.plugin.settings.aiModel && models.includes(this.plugin.settings.aiModel)) {
                                     dropdown.setValue(this.plugin.settings.aiModel);
+                                } else if (models.length > 0) {
+                                    // Auto-select first model if none is saved
+                                    dropdown.setValue(models[0]);
+                                    this.plugin.settings.aiModel = models[0];
+                                    await this.plugin.saveSettings();
                                 }
                             });
                         }

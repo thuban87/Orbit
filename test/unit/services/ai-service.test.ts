@@ -49,8 +49,8 @@ describe('DEFAULT_PROMPT_TEMPLATE', () => {
             '{{daysSinceContact}}',
             '{{socialBattery}}',
             '{{lastInteraction}}',
-            '{{conversationalFuel}}',
-            '{{smallTalkData}}',
+            '{{Conversational Fuel}}',
+            '{{Small Talk Data}}',
         ];
         for (const p of placeholders) {
             expect(DEFAULT_PROMPT_TEMPLATE).toContain(p);
@@ -334,7 +334,7 @@ describe('GoogleProvider', () => {
     describe('listModels', () => {
         it('should return curated model list', async () => {
             const models = await provider.listModels();
-            expect(models).toContain('gemini-3.0-flash');
+            expect(models).toContain('gemini-3-flash-preview');
             expect(models).toContain('gemini-2.5-flash');
             expect(models.length).toBe(2);
         });
@@ -345,19 +345,19 @@ describe('GoogleProvider', () => {
             mockResponse({
                 candidates: [{ content: { parts: [{ text: 'Hello from Gemini!' }] } }],
             });
-            const result = await provider.generate('Write something', 'gemini-3.0-flash');
+            const result = await provider.generate('Write something', 'gemini-3-flash-preview');
             expect(result).toBe('Hello from Gemini!');
         });
 
         it('should throw when API key is empty', async () => {
             const noKey = new GoogleProvider('');
-            await expect(noKey.generate('test', 'gemini-3.0-flash'))
+            await expect(noKey.generate('test', 'gemini-3-flash-preview'))
                 .rejects.toThrow('Google API key is not configured');
         });
 
         it('should throw on unexpected response format', async () => {
             mockResponse({ candidates: [] });
-            await expect(provider.generate('test', 'gemini-3.0-flash'))
+            await expect(provider.generate('test', 'gemini-3-flash-preview'))
                 .rejects.toThrow('Google Gemini returned an unexpected response format');
         });
 

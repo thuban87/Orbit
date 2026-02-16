@@ -937,7 +937,7 @@ interface AiProvider {
 
 ---
 
-## Phase 8: AI Message Suggest Feature
+## Phase 8: AI Message Suggest Feature ✅
 
 **Goal:** Ship the complete AI message suggestion flow.
 
@@ -1002,7 +1002,7 @@ interface MessageContext {
 
 ---
 
-## Phase 8.5: AI Message Suggest Tests
+## Phase 8.5: AI Message Suggest Tests ✅
 
 **Goal:** ≥80% unit + integration coverage on Phase 8 code.
 
