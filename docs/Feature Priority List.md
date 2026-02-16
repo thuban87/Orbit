@@ -7,7 +7,7 @@ tags:
 ---
 # Orbit - Feature Priority List
 
-**Last Updated:** February 15, 2026
+**Last Updated:** February 16, 2026
 **Version:** 0.1.0
 
 ---
@@ -140,8 +140,8 @@ tags:
 - [x] Phase 5.5 — Edit & Update This Person Tests
 - [x] Phase 6 — User Schema System (+32 tests, 402 total)
 - [x] Phase 6.5 — User Schema System Tests
-- [ ] Phase 7 — AI Provider Architecture
-- [ ] Phase 7.5 — AI Provider Tests
+- [x] Phase 7 — AI Provider Architecture (AiService + 5 providers + settings UI)
+- [x] Phase 7.5 — AI Provider Tests (+100 tests, 502 total)
 - [ ] Phase 8 — AI Message Suggest Feature
 - [ ] Phase 8.5 — AI Message Suggest Tests
 - [ ] Phase 9 — Debug Logging System

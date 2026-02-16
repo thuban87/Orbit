@@ -852,7 +852,7 @@ frequency: Monthly
 
 ---
 
-## Phase 7: AI Provider Architecture
+## Phase 7: AI Provider Architecture ✅
 
 **Goal:** Build the AI provider abstraction layer and settings UI. No user-facing AI feature yet — just the plumbing.
 
@@ -916,7 +916,7 @@ interface AiProvider {
 
 ---
 
-## Phase 7.5: AI Provider Tests
+## Phase 7.5: AI Provider Tests ✅
 
 **Goal:** ≥80% unit + integration coverage on Phase 7 code.
 

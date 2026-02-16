@@ -71,6 +71,12 @@ export function createSettings(overrides: Partial<OrbitSettings> = {}): OrbitSet
         contactsFolder: overrides.contactsFolder ?? '',
         interactionLogHeading: overrides.interactionLogHeading ?? 'Interaction Log',
         schemaFolder: overrides.schemaFolder ?? '',
+        aiProvider: overrides.aiProvider ?? 'none',
+        aiApiKey: overrides.aiApiKey ?? '',
+        aiModel: overrides.aiModel ?? '',
+        aiPromptTemplate: overrides.aiPromptTemplate ?? 'Test prompt for {{name}}',
+        aiCustomEndpoint: overrides.aiCustomEndpoint ?? '',
+        aiCustomModel: overrides.aiCustomModel ?? '',
     };
 }
 

@@ -1,6 +1,13 @@
-import { App, PluginSettingTab, Setting } from "obsidian";
+import { App, Notice, Platform, PluginSettingTab, Setting } from "obsidian";
 import OrbitPlugin from "./main";
 import { FolderSuggest } from "./utils/FolderSuggest";
+import { DEFAULT_PROMPT_TEMPLATE } from "./services/AiService";
+
+/**
+ * AI provider type — determines which provider implementation is active.
+ * 'none' means AI features are disabled (default).
+ */
+export type AiProviderType = 'none' | 'ollama' | 'openai' | 'anthropic' | 'google' | 'custom';
 
 export interface OrbitSettings {
     /** The tag used to identify Person notes (e.g., "person" for #person) */
@@ -17,6 +24,18 @@ export interface OrbitSettings {
     interactionLogHeading: string;
     /** Folder containing user-authored schema files */
     schemaFolder: string;
+    /** Active AI provider ('none' = disabled) */
+    aiProvider: AiProviderType;
+    /** API key for current cloud provider (stored in data.json) */
+    aiApiKey: string;
+    /** Selected model name */
+    aiModel: string;
+    /** Prompt template with {{placeholder}} variables */
+    aiPromptTemplate: string;
+    /** Custom endpoint URL (only used when aiProvider = 'custom') */
+    aiCustomEndpoint: string;
+    /** Custom model name (only used when aiProvider = 'custom') */
+    aiCustomModel: string;
 }
 
 export const DEFAULT_SETTINGS: OrbitSettings = {
@@ -27,7 +46,26 @@ export const DEFAULT_SETTINGS: OrbitSettings = {
     contactsFolder: "",
     interactionLogHeading: "Interaction Log",
     schemaFolder: "",
+    aiProvider: "none",
+    aiApiKey: "",
+    aiModel: "",
+    aiPromptTemplate: DEFAULT_PROMPT_TEMPLATE,
+    aiCustomEndpoint: "",
+    aiCustomModel: "",
 };
+
+/** Labels shown in the AI provider dropdown */
+const AI_PROVIDER_LABELS: Record<AiProviderType, string> = {
+    none: "None (disabled)",
+    ollama: "Ollama (local)",
+    openai: "OpenAI",
+    anthropic: "Anthropic",
+    google: "Google (Gemini)",
+    custom: "Custom endpoint",
+};
+
+/** Providers that require an API key */
+const CLOUD_PROVIDERS: AiProviderType[] = ['openai', 'anthropic', 'google', 'custom'];
 
 export class OrbitSettingTab extends PluginSettingTab {
     plugin: OrbitPlugin;
@@ -181,5 +219,162 @@ export class OrbitSettingTab extends PluginSettingTab {
                         }
                     });
             });
+
+        // ── AI Provider Section ──────────────────────────────────
+        this.displayAiSettings(containerEl);
+    }
+
+    /**
+     * Render the AI provider settings section.
+     * Separated for clarity — conditionally shows fields based on selected provider.
+     */
+    private displayAiSettings(containerEl: HTMLElement): void {
+        new Setting(containerEl).setName("AI provider").setHeading();
+
+        const currentProvider = this.plugin.settings.aiProvider;
+
+        // Provider dropdown
+        new Setting(containerEl)
+            .setName("Provider")
+            .setDesc("Select an AI provider for message suggestions. Default is disabled.")
+            .addDropdown((dropdown) => {
+                // Add options — hide Ollama on mobile
+                for (const [key, label] of Object.entries(AI_PROVIDER_LABELS)) {
+                    if (key === 'ollama' && Platform.isMobile) continue;
+                    dropdown.addOption(key, label);
+                }
+                dropdown.setValue(currentProvider);
+                dropdown.onChange(async (value) => {
+                    const newProvider = value as AiProviderType;
+                    const wasNone = this.plugin.settings.aiProvider === 'none';
+
+                    this.plugin.settings.aiProvider = newProvider;
+                    // Clear model when switching providers
+                    this.plugin.settings.aiModel = '';
+                    await this.plugin.saveSettings();
+
+                    // First-time privacy notice
+                    if (wasNone && newProvider !== 'none') {
+                        new Notice(
+                            "This feature sends contact data to external AI services. Review your provider's privacy policy.",
+                            10000
+                        );
+                    }
+
+                    // Re-render to show/hide conditional fields
+                    this.display();
+                });
+            });
+
+        // ── Conditional fields based on provider ────────────────
+
+        // API key — shown for cloud providers only
+        if (CLOUD_PROVIDERS.includes(currentProvider)) {
+            new Setting(containerEl)
+                .setName("API key")
+                .setDesc(
+                    "API keys are stored in your vault's plugin data. Ensure your vault is not publicly shared."
+                )
+                .addText((text) => {
+                    text.inputEl.type = 'password';
+                    text.inputEl.autocomplete = 'off';
+                    text
+                        .setPlaceholder("sk-...")
+                        .setValue(this.plugin.settings.aiApiKey)
+                        .onChange(async (value) => {
+                            this.plugin.settings.aiApiKey = value.trim();
+                            await this.plugin.saveSettings();
+                        });
+                });
+        }
+
+        // Custom endpoint URL — shown only for 'custom'
+        if (currentProvider === 'custom') {
+            new Setting(containerEl)
+                .setName("Endpoint URL")
+                .setDesc("Full URL for your OpenAI-compatible API endpoint.")
+                .addText((text) =>
+                    text
+                        .setPlaceholder("https://your-api.example.com/v1/chat/completions")
+                        .setValue(this.plugin.settings.aiCustomEndpoint)
+                        .onChange(async (value) => {
+                            this.plugin.settings.aiCustomEndpoint = value.trim();
+                            await this.plugin.saveSettings();
+                        })
+                );
+
+            new Setting(containerEl)
+                .setName("Model name")
+                .setDesc("Model identifier to use with your custom endpoint.")
+                .addText((text) =>
+                    text
+                        .setPlaceholder("my-model")
+                        .setValue(this.plugin.settings.aiCustomModel)
+                        .onChange(async (value) => {
+                            this.plugin.settings.aiCustomModel = value.trim();
+                            await this.plugin.saveSettings();
+                        })
+                );
+        }
+
+        // Model dropdown — shown for non-custom, non-none providers
+        if (currentProvider !== 'none' && currentProvider !== 'custom') {
+            new Setting(containerEl)
+                .setName("Model")
+                .setDesc("Select a model from the provider's available models.")
+                .addDropdown((dropdown) => {
+                    // Populate models from the AI service
+                    const aiService = this.plugin.aiService;
+                    if (aiService) {
+                        const provider = aiService.getProvider(currentProvider);
+                        if (provider) {
+                            // listModels is async — populate asynchronously
+                            void provider.listModels().then((models) => {
+                                for (const model of models) {
+                                    dropdown.addOption(model, model);
+                                }
+                                if (this.plugin.settings.aiModel) {
+                                    dropdown.setValue(this.plugin.settings.aiModel);
+                                }
+                            });
+                        }
+                    }
+                    dropdown.onChange(async (value) => {
+                        this.plugin.settings.aiModel = value;
+                        await this.plugin.saveSettings();
+                    });
+                });
+        }
+
+        // Prompt template — shown for all non-none providers
+        if (currentProvider !== 'none') {
+            new Setting(containerEl)
+                .setName("Prompt template")
+                .setDesc("Template for AI message generation. Use {{placeholders}} for contact data.")
+                .addTextArea((textarea) => {
+                    textarea.inputEl.rows = 10;
+                    textarea.inputEl.cols = 50;
+                    textarea
+                        .setValue(this.plugin.settings.aiPromptTemplate)
+                        .onChange(async (value) => {
+                            this.plugin.settings.aiPromptTemplate = value;
+                            await this.plugin.saveSettings();
+                        });
+                });
+
+            // Reset-to-default button
+            new Setting(containerEl)
+                .setName("Reset prompt template")
+                .setDesc("Restore the default prompt template.")
+                .addButton((button) => {
+                    button
+                        .setButtonText("Reset to default")
+                        .onClick(async () => {
+                            this.plugin.settings.aiPromptTemplate = DEFAULT_PROMPT_TEMPLATE;
+                            await this.plugin.saveSettings();
+                            this.display(); // Re-render to update textarea
+                        });
+                });
+        }
     }
 }

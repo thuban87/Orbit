@@ -282,6 +282,16 @@ export class Setting {
         cb(button);
         return this;
     }
+    addTextArea(cb: (textarea: any) => void): this {
+        const textarea = {
+            setPlaceholder: vi.fn().mockReturnThis(),
+            setValue: vi.fn().mockReturnThis(),
+            onChange: vi.fn().mockReturnThis(),
+            inputEl: document.createElement('textarea'),
+        };
+        cb(textarea);
+        return this;
+    }
 }
 
 // ─── Views ──────────────────────────────────────────────────────
@@ -353,3 +363,32 @@ export class AbstractInputSuggest<T> {
     renderSuggestion(_value: T, _el: HTMLElement): void { }
     selectSuggestion(_value: T): void { }
 }
+
+// ─── HTTP & Platform Mocks ──────────────────────────────────────
+
+/**
+ * Mock requestUrl — vi.fn() that returns a configurable response.
+ * Tests should call `vi.mocked(requestUrl).mockResolvedValue(...)` to
+ * set up specific responses per test case.
+ */
+export const requestUrl = vi.fn();
+
+/**
+ * Mock Platform — defaults to desktop environment.
+ * Tests can override e.g. `Platform.isMobile = true` to simulate mobile.
+ */
+export const Platform = {
+    isDesktop: true,
+    isMobile: false,
+    isDesktopApp: true,
+    isMobileApp: false,
+    isIosApp: false,
+    isAndroidApp: false,
+    isPhone: false,
+    isTablet: false,
+    isMacOS: false,
+    isWin: true,
+    isLinux: false,
+    isSafari: false,
+    resourcePathPrefix: 'app://local/',
+};

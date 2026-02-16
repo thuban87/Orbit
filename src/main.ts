@@ -3,6 +3,7 @@ import { OrbitSettingTab, OrbitSettings, DEFAULT_SETTINGS } from "./settings";
 import { OrbitIndex } from "./services/OrbitIndex";
 import { OrbitView, VIEW_TYPE_ORBIT } from "./views/OrbitView";
 import { LinkListener } from "./services/LinkListener";
+import { AiService } from "./services/AiService";
 import { OrbitFormModal } from "./modals/OrbitFormModal";
 import { OrbitHubModal } from "./modals/OrbitHubModal";
 import { newPersonSchema } from "./schemas/new-person.schema";
@@ -41,6 +42,7 @@ export default class OrbitPlugin extends Plugin {
     index: OrbitIndex;
     linkListener: LinkListener;
     schemaLoader: SchemaLoader;
+    aiService: AiService;
 
     async onload() {
         // Load settings
@@ -111,6 +113,10 @@ export default class OrbitPlugin extends Plugin {
 
         // Initialize the Link Listener (The "Tether")
         this.linkListener = new LinkListener(this.app, this.index, this.settings);
+
+        // Initialize the AI Service and refresh provider config
+        this.aiService = new AiService();
+        this.aiService.refreshProviders(this.settings);
 
         // Subscribe to editor changes for link detection
         this.registerEvent(
@@ -342,6 +348,8 @@ export default class OrbitPlugin extends Plugin {
         // Update schema loader settings and rescan
         this.schemaLoader.updateSchemaFolder(this.settings.schemaFolder);
         await this.schemaLoader.rescan();
+        // Refresh AI provider configuration
+        this.aiService.refreshProviders(this.settings);
     }
 
     /**

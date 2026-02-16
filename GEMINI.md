@@ -56,6 +56,11 @@ tags:
 5. **Wait for Confirmation** — Brad tests in Obsidian
 6. **Wrap Up** — Update session docs indicated by user, provide commit message
 
+### Workflow Gates (HARD STOPS)
+- After `npm run build` passes, IMMEDIATELY run `npm run deploy:test`. Do not ask — just do it.
+- After deploying to test, STOP and notify the user to test in Obsidian. Do NOT proceed to the next phase, write tests, or do any further code work until the user confirms it works.
+- X.5 test phases are a SEPARATE task from their parent phase. Never start writing tests for an X.5 phase until the user has explicitly confirmed the parent phase works in Obsidian.
+
 ### The "Brad Protocol"
 - **Micro-Steps:** Break complex tasks into atomic steps
 - **Explain Why:** Briefly justify architectural choices
@@ -207,6 +212,8 @@ Snoozed: snooze_until date is in the future
 - ❌ Hardcode paths or contact names
 - ❌ Use `vault.modify()` for frontmatter — use `app.fileManager.processFrontMatter()`
 - ❌ Use `moment()` for date parsing — use native `Date` + the `parseDate()` utility
+- ❌ Pipe build output to files — only `npx vitest run` needs `Out-File` per the `/test` workflow. All other commands run normally.
+- ❌ Start writing tests before the user has manually verified the feature in Obsidian
 
 ### Do:
 - ✅ Keep files under 300 lines where possible

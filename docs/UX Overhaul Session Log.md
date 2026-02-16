@@ -699,3 +699,45 @@ Mock improvements:
 - FuzzySuggestModal mock added
 ```
 
+### Phase 7 + 7.5
+```
+feat(ai): Phase 7 + 7.5 — AI Provider Architecture & Tests
+
+AiService (src/services/AiService.ts) [NEW]:
+- AiProvider interface: id, name, isAvailable(), listModels(), generate()
+- OllamaProvider: local auto-detect via GET ping, dynamic model list from /api/tags
+- OpenAiProvider: API key auth, curated model list, chat completions API
+- AnthropicProvider: x-api-key header auth, Messages API
+- GoogleProvider: API key in query param, Gemini generateContent API
+- CustomProvider: user-provided URL, OpenAI-compatible format with fallback
+- AiService orchestrator: provider registry, refreshProviders(), getActiveProvider(), generate()
+- DEFAULT_PROMPT_TEMPLATE with {{placeholders}} for contact data
+- All HTTP via Obsidian requestUrl() for CORS + mobile compatibility
+
+Settings (src/settings.ts):
+- AiProviderType union: none | ollama | openai | anthropic | google | custom
+- 6 new settings fields (aiProvider, aiApiKey, aiModel, aiPromptTemplate, aiCustomEndpoint, aiCustomModel)
+- AI provider section with conditional field visibility
+- Ollama hidden on mobile via Platform.isMobile check
+- Prompt template as textarea (10 rows) for multi-paragraph editing
+- Privacy notice on first provider enable
+- Reset prompt template button
+
+Main (src/main.ts):
+- AiService instantiated in onload, refreshed on settings save
+
+Workflow Rules:
+- Added workflow gates to general-rules.md, GEMINI.md, CLAUDE.md
+- Hard stops: deploy after build, stop for user confirmation, separate test phases
+
+Tests (100 new, 502 total):
+- ai-service.test.ts (61): all 5 providers + orchestrator, requestUrl mocking
+- ai-settings.test.ts (20): defaults, types, conditional UI, mobile Ollama hiding
+- ai-provider-flow.test.ts (19): end-to-end generation flow for all providers
+
+Mock improvements:
+- requestUrl (vi.fn) and Platform mocks added to obsidian.ts
+- addTextArea mock added to Setting class
+- AI settings defaults added to createSettings factory
+```
+
