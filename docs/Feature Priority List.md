@@ -160,7 +160,7 @@ tags:
 > **Session Log:** [[Testing Overhaul Session Log]]
 
 - [x] Wave 0 — Quick Wins: branch gap closers for types.ts, paths.ts, loader.ts (+7 tests, 647 total)
-- [ ] Wave 1 — Plugin Lifecycle: main.ts (~32 tests)
+- [x] Wave 1 — Plugin Lifecycle: main.ts (+40 tests, 687 total)
 - [ ] Wave 2 — Components: FuelTooltip, ContactGrid, BirthdayBanner, OrbitHeader, ContactCard, FormRenderer (~65 tests)
 - [ ] Wave 3 — Views + Context: OrbitView, OrbitDashboard, OrbitContext (~18 tests)
 - [ ] Wave 4 — Modals: AiResultModal, SchemaPickerModal, ScrapeConfirmModal, OrbitHubModal (~45 tests)

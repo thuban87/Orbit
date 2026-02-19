@@ -87,7 +87,7 @@ Services (`OrbitIndex`, `LinkListener`, `AiService`, `ContactManager`, `ImageScr
 
 ---
 
-## Wave 1: Plugin Lifecycle (`main.ts`) — 🔴 HIGH EFFORT
+## ✅ Wave 1: Plugin Lifecycle (`main.ts`) — 🔴 HIGH EFFORT
 
 **File:** `src/main.ts` (408 lines, 0% coverage)
 **Mocking depth:** Thorough — full `Plugin`, `App`, `Vault`, `Workspace`, `MetadataCache` mocks

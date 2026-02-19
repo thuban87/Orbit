@@ -57,24 +57,73 @@ Each session entry should include:
 
 ---
 
+## 2026-02-19 - Wave 1: Plugin Lifecycle (`main.ts`)
+
+**Focus:** Comprehensive unit tests for `main.ts` — plugin lifecycle, service initialization, event registration, command handling, and all public methods.
+
+### Completed:
+
+#### `main.ts` — 40 tests (NEW file: `test/unit/main.test.ts`)
+
+**Service Initialization (8 tests):**
+- ✅ loadData(), Logger.setLevel(), SchemaLoader, OrbitIndex, registerView, LinkListener, AiService, ribbon icon
+
+**MetadataCache Initialization (4 tests):**
+- ✅ initialized=true → immediate init, initialized=false → resolved handler, resolved handler fires, onLayoutReady re-scan
+
+**Event Registration (4 tests):**
+- ✅ metadataCache changed, vault delete (TFile guard), vault rename (TFile guard), editor-change
+
+**Command Registration (6 tests):**
+- ✅ dump-index, open-orbit, weekly-digest, orbit-hub, new-person, update-this-person (with sub-cases)
+
+**Photo Scrape Handler (3 tests):**
+- ✅ ScrapeConfirmModal creation, confirm flow (scrape + processFrontMatter), error handling
+
+**openNewPersonFlow (4 tests):**
+- ✅ No schemas Notice, single schema direct open, multiple schemas picker, form submit with scrape
+
+**generateWeeklyDigest (4 tests):**
+- ✅ Contact grouping, create new file, modify existing, open after generation
+
+**Other (7 tests):**
+- ✅ onunload no-throw, saveSettings propagation, loadSettings merge, activateView (3 scenarios), ribbon click
+
+### Files Changed:
+
+- `test/unit/main.test.ts` — NEW, 40 tests covering full plugin lifecycle
+
+### Testing Notes:
+- ✅ Isolated run: 40/40 passed (32ms)
+- ✅ Full test suite: **40 files, 687 tests, 0 failures** (up from 647)
+- ✅ Coverage for `main.ts`: 96.71% stmts, 88.23% branches, 92.85% fns, 97.35% lines
+- ✅ All metrics exceed 80% target
+- ✅ No regressions in existing tests
+
+### Blockers/Issues:
+- None
+- No source code bugs discovered in `main.ts`
+
+---
+
 ## Next Session Prompt
 
 ```
-Continuing Testing Overhaul. Wave 0 (Quick Wins) is complete.
+Continuing Testing Overhaul. Wave 1 (Plugin Lifecycle) is complete.
 
 What was done last session:
-- ✅ Wave 0: 7 branch gap closer tests added across 3 files
-- ✅ 647 total tests passing (39 files, 0 failures)
+- ✅ Wave 1: 40 tests for main.ts (96.71% stmts, 88.23% branches, 97.35% lines)
+- ✅ 687 total tests passing (40 files, 0 failures)
 
-Next up: Wave 1 — Plugin Lifecycle (main.ts)
-- 0% coverage, ~32 tests needed, HIGH effort
-- Full mocking of Plugin, App, Vault, Workspace, MetadataCache
-- See Testing Overhaul Plan.md lines 90-194 for full spec
+Next up: Wave 2 — Components (FuelTooltip, ContactGrid, BirthdayBanner, OrbitHeader, ContactCard, FormRenderer)
+- ~65 tests needed, MEDIUM effort
+- RTL (React Testing Library) rendering needed
+- See Testing Overhaul Plan.md lines 196-350 for full spec
 
 Key files to reference:
 - docs/Testing Overhaul Plan.md — Full wave breakdown
 - docs/Testing Overhaul Session Log.md — This log
-- src/main.ts — Target file (408 lines, 0% coverage)
+- src/components/ — Target files
 - test/mocks/obsidian.ts — Mock infrastructure
 ```
 
@@ -83,12 +132,21 @@ Key files to reference:
 ## Git Commit Message
 
 ```
-test(wave-0): close branch gaps in types, paths, and loader
+test(wave-1): add 40 plugin lifecycle tests for main.ts
 
-Wave 0 - Quick Wins (Branch Gap Closers):
-- types.ts: parseDate non-ISO fallback branch (Jan 15, 2024 format)
-- paths.ts: ensureFolderExists empty path guard, folder-exists skip, error swallow
-- loader.ts: parseSchemaFile zero-fields null, generateExampleSchema catch + exists
+Wave 1 - Plugin Lifecycle (main.ts):
+- Service initialization: SchemaLoader, OrbitIndex, LinkListener, AiService
+- MetadataCache init paths: initialized true/false, resolved handler, onLayoutReady
+- Event registration: metadataCache changed, vault delete/rename, editor-change
+- Command registration: dump-index, open-orbit, weekly-digest, orbit-hub, new-person, update-this-person
+- Photo scrape handler: ScrapeConfirmModal, confirm/error flows
+- openNewPersonFlow: no schemas, single/multiple schemas, form submit with scrape
+- generateWeeklyDigest: contact grouping, create/modify file, open after
+- activateView: existing leaf, new leaf, null leaf safety
+- saveSettings/loadSettings: propagation + merge
+- onunload: no-throw
 
-Test suite: 39 files, 647 tests, 0 failures (was 640)
+Coverage main.ts: 96.71% stmts, 88.23% branches, 92.85% fns, 97.35% lines
+Test suite: 40 files, 687 tests, 0 failures (was 647)
 ```
+
