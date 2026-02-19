@@ -240,24 +240,89 @@ Each session entry should include:
 
 ---
 
+## 2026-02-19 - Wave 4: Modals (AiResultModal, SchemaPickerModal, ScrapeConfirmModal, OrbitHubModal)
+
+**Focus:** Comprehensive unit tests for all 4 modal classes — photo resolution, lifecycle, action handlers, button state management, and async error handling.
+
+### Completed:
+
+#### Mock Infrastructure
+- ✅ Added `getResourcePath` (vault + adapter) and `getFirstLinkpathDest` (metadataCache) to `createMockApp()` in `test/mocks/obsidian.ts`
+
+#### New Test Files
+
+##### `ai-result-modal.test.ts` — 13 tests (NEW)
+- ✅ Constructor initialization, loading state
+- ✅ Photo resolution: URL passthrough, wikilink via `getFirstLinkpathDest`, unresolvable wikilink → null, vault-local via `adapter.getResourcePath`
+- ✅ Lifecycle: `onOpen` title + CSS class, `onClose` removes CSS class
+- ✅ `setMessage()` clears loading, re-renders
+- ✅ `setError()` prefixes "Error:", clears loading
+- ✅ `handleRegenerate()`: success, Error throw, non-Error throw
+- ✅ `handleCopy()` writes to clipboard
+
+##### `schema-picker-modal.test.ts` — 4 tests (NEW)
+- ✅ Constructor stores schemas and callback
+- ✅ `getItems()` returns schemas array
+- ✅ `getItemText()` returns schema title
+- ✅ `onChooseItem()` calls callback with selected schema
+
+##### `scrape-confirm-modal.test.ts` — 6 tests (NEW)
+- ✅ Constructor stores contact name + callbacks
+- ✅ `onOpen()` creates heading "Download photo?"
+- ✅ `onOpen()` shows contact name in description
+- ✅ Download button: close + onConfirm (via Setting.addButton spy)
+- ✅ Skip button: close + onSkip
+- ✅ `onClose()` empties content
+
+#### Extended Test File
+
+##### `orbit-hub-modal.test.ts` — +23 tests (9 → 32 total)
+- ✅ Selection: set contact, toggle deselect
+- ✅ Update flow: no-selection guard, view transition + title
+- ✅ Edit flow: OrbitFormModal creation, rename on name change, skip rename, photo scrape, scrape failure
+- ✅ Add/Digest: delegations + error handling
+- ✅ AI Suggest: null guard, AI not configured, happy path, error path
+- ✅ Save flow: frontmatter update, log append, no-note skip, error
+- ✅ Cancel: returns to hub view + resets title
+- ✅ Button disabled states (Update/Edit/Suggest)
+- ✅ `openDirectUpdate()` sets contact + view
+
+### Files Changed:
+
+- `test/mocks/obsidian.ts` — MODIFIED, +3 lines (getResourcePath, getFirstLinkpathDest)
+- `test/unit/modals/ai-result-modal.test.ts` — NEW, 13 tests
+- `test/unit/modals/schema-picker-modal.test.ts` — NEW, 4 tests
+- `test/unit/modals/scrape-confirm-modal.test.ts` — NEW, 6 tests
+- `test/unit/modals/orbit-hub-modal.test.ts` — MODIFIED, +23 tests (32 total)
+
+### Testing Notes:
+- ✅ Full test suite: **50 files, 815 tests, 0 failures** (up from 769)
+- ✅ All existing tests continue to pass
+- ✅ Class-based `vi.fn().mockImplementation(function(this:any) { ... })` pattern required for `OrbitFormModal` and `AiResultModal` mocks — arrow functions can't be `new`-ed
+
+### Bugs Discovered:
+- **`openDirectUpdate()` title bug:** When calling `openDirectUpdate(contact)`, the modal title stays "Orbit" instead of showing "Update {name}". Root cause: `onOpen()` hardcodes `titleEl.setText('Orbit')` and never calls `updateTitle()`. Fix: `onOpen()` should call `this.updateTitle()` instead of hardcoding.
+
+---
+
 ## Next Session Prompt
 
 ```
-Continuing Testing Overhaul. Waves 0-3 are complete.
+Continuing Testing Overhaul. Waves 0-4 are complete.
 
 What was done last session:
-- Wave 3: 18 new view/context tests across 3 files (all new)
-- 769 total tests passing (47 files, 0 failures)
+- Wave 4: 46 new modal tests across 3 new + 1 extended file
+- 815 total tests passing (50 files, 0 failures)
+- Bug flagged: openDirectUpdate() title stays Orbit instead of Update {name}
 
-Next up: Wave 4 — Modals (AiResultModal, SchemaPickerModal, ScrapeConfirmModal, OrbitHubModal)
-- ~45 tests needed, MEDIUM-HIGH effort
-- Complex async handlers, multi-mock interactions
-- See Testing Overhaul Plan.md for full spec (lines 471-577)
+Next up: Wave 5 — Settings tab (~18 tests)
+- See Testing Overhaul Plan.md for full spec
+- Last wave! Should be straightforward.
 
 Key files to reference:
 - docs/Testing Overhaul Plan.md — Full wave breakdown
 - docs/Testing Overhaul Session Log.md — This log
-- src/modals/ — Target files
+- src/settings.ts — Target file
 - test/mocks/obsidian.ts — Mock infrastructure
 ```
 
@@ -266,14 +331,15 @@ Key files to reference:
 ## Git Commit Message
 
 ```
-test(wave-3): add 18 view and context tests for OrbitView, OrbitDashboard, OrbitContext
+test(wave-4): add 46 modal tests for AiResultModal, SchemaPickerModal, ScrapeConfirmModal, OrbitHubModal
 
-Wave 3 - Views + Context:
-- NEW orbit-view.test.ts: 6 tests (view metadata, container setup, React root lifecycle)
-- NEW orbit-dashboard.test.tsx: 4 tests (provider wrapping, child components, state wiring)
-- NEW orbit-context.test.tsx: 8 tests (hooks, initial load, event subscription, cleanup)
+Wave 4 - Modals:
+- NEW ai-result-modal.test.ts: 13 tests (photo resolution, lifecycle, message/error, regenerate, copy)
+- NEW schema-picker-modal.test.ts: 4 tests (constructor, getItems, getItemText, onChooseItem)
+- NEW scrape-confirm-modal.test.ts: 6 tests (lifecycle, button handlers via Setting spy)
+- EXTENDED orbit-hub-modal.test.ts: +23 tests (selection, update/edit/add/digest/suggest/save/cancel flows)
+- Updated test/mocks/obsidian.ts: added getResourcePath and getFirstLinkpathDest to createMockApp
 
-Test suite: 47 files, 769 tests, 0 failures (was 751)
+Test suite: 50 files, 815 tests, 0 failures (was 769)
+Bug flagged: openDirectUpdate() title stays Orbit - onOpen() should call updateTitle()
 ```
-
-

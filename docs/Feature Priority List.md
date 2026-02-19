@@ -163,5 +163,5 @@ tags:
 - [x] Wave 1 — Plugin Lifecycle: main.ts (+40 tests, 687 total)
 - [x] Wave 2 — Components: FuelTooltip, ContactGrid, BirthdayBanner, OrbitHeader, ContactCard, FormRenderer (+64 tests, 751 total)
 - [x] Wave 3 — Views + Context: OrbitView, OrbitDashboard, OrbitContext (+18 tests, 769 total)
-- [ ] Wave 4 — Modals: AiResultModal, SchemaPickerModal, ScrapeConfirmModal, OrbitHubModal (~45 tests)
+- [x] Wave 4 — Modals: AiResultModal, SchemaPickerModal, ScrapeConfirmModal, OrbitHubModal (+46 tests, 815 total)
 - [ ] Wave 5 — Settings tab: display(), photo settings, migration (~18 tests)

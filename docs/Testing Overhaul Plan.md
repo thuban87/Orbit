@@ -468,7 +468,7 @@ Services (`OrbitIndex`, `LinkListener`, `AiService`, `ContactManager`, `ImageScr
 
 ---
 
-## Wave 4: Modals — 🟡-🔴 MEDIUM-HIGH EFFORT
+## Wave 4: Modals — ✅ COMPLETE
 
 **Estimated tests:** ~45
 **Session estimate:** 1.5 sessions (bumped from 1 — async handlers + multi-mock interactions are complex)
