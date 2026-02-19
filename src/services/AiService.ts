@@ -136,6 +136,7 @@ export function assemblePrompt(template: string, context: MessageContext, fileCo
         return extractSection(fileContent, sectionName.trim());
     });
 
+    Logger.debug('AiService', `Assembled prompt:\n${result}`);
     return result;
 }
 

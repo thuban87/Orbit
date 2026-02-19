@@ -1,4 +1,4 @@
-import { Plugin, TFile, WorkspaceLeaf, MarkdownView, Notice, FuzzySuggestModal } from "obsidian";
+import { Plugin, TFile, WorkspaceLeaf, MarkdownView, Notice } from "obsidian";
 import { OrbitSettingTab, OrbitSettings, DEFAULT_SETTINGS } from "./settings";
 import { OrbitIndex } from "./services/OrbitIndex";
 import { OrbitView, VIEW_TYPE_ORBIT } from "./views/OrbitView";
@@ -7,7 +7,7 @@ import { AiService } from "./services/AiService";
 import { OrbitFormModal } from "./modals/OrbitFormModal";
 import { OrbitHubModal } from "./modals/OrbitHubModal";
 import { ScrapeConfirmModal } from "./modals/ScrapeConfirmModal";
-import { newPersonSchema } from "./schemas/new-person.schema";
+import { SchemaPickerModal } from "./modals/SchemaPickerModal";
 import { createContact } from "./services/ContactManager";
 import { SchemaLoader } from "./schemas/loader";
 import type { SchemaDef } from "./schemas/types";
@@ -15,31 +15,7 @@ import { Logger } from "./utils/logger";
 import { ImageScraper } from "./utils/ImageScraper";
 import { formatLocalDate } from "./utils/dates";
 
-/**
- * FuzzySuggestModal for picking a schema from the registry.
- */
-class SchemaPickerModal extends FuzzySuggestModal<SchemaDef> {
-    private schemas: SchemaDef[];
-    private onChoose: (schema: SchemaDef) => void;
 
-    constructor(app: any, schemas: SchemaDef[], onChoose: (schema: SchemaDef) => void) {
-        super(app);
-        this.schemas = schemas;
-        this.onChoose = onChoose;
-    }
-
-    getItems(): SchemaDef[] {
-        return this.schemas;
-    }
-
-    getItemText(schema: SchemaDef): string {
-        return schema.title;
-    }
-
-    onChooseItem(schema: SchemaDef): void {
-        this.onChoose(schema);
-    }
-}
 
 export default class OrbitPlugin extends Plugin {
     settings: OrbitSettings;
@@ -201,49 +177,6 @@ export default class OrbitPlugin extends Plugin {
             },
         });
 
-        // Register New Person command
-        this.addCommand({
-            id: "new-person",
-            name: "New Person",
-            callback: () => {
-                const modal = new OrbitFormModal(
-                    this.app,
-                    newPersonSchema,
-                    async (data) => {
-                        // Handle photo scraping if requested
-                        if (data._scrapePhoto && data.photo && ImageScraper.isUrl(data.photo)) {
-                            try {
-                                const wikilink = await ImageScraper.scrapeAndSave(
-                                    this.app,
-                                    data.photo,
-                                    data.name || 'Contact',
-                                    this.settings.photoAssetFolder
-                                );
-                                data.photo = wikilink;
-                                new Notice('✓ Photo downloaded and saved');
-                            } catch (error) {
-                                Logger.error('Main', 'Photo scrape failed', error);
-                                new Notice('⚠ Photo download failed — keeping original URL');
-                            }
-                        }
-
-                        await createContact(
-                            this.app,
-                            newPersonSchema,
-                            data,
-                            this.settings
-                        );
-                        // Refresh the index to pick up the new contact
-                        await this.index.scanVault();
-                        this.index.trigger("change");
-                    },
-                    {},
-                    this.settings.defaultScrapeEnabled,
-                );
-                modal.open();
-            },
-        });
-
         // Register Orbit Hub command
         this.addCommand({
             id: "orbit-hub",
@@ -255,67 +188,12 @@ export default class OrbitPlugin extends Plugin {
             },
         });
 
-        // Register New Contact from Schema command
+        // Register New Person command (schema-aware: shows picker if multiple schemas exist)
         this.addCommand({
-            id: "new-contact-from-schema",
-            name: "New Contact from Schema",
+            id: "new-person",
+            name: "New Person",
             callback: () => {
-                const schemas = this.schemaLoader.getSchemas();
-                if (schemas.length === 0) {
-                    new Notice("No schemas available");
-                    return;
-                }
-
-                const openForm = (schema: SchemaDef) => {
-                    const modal = new OrbitFormModal(
-                        this.app,
-                        schema,
-                        async (data) => {
-                            // Handle photo scraping if requested
-                            if (data._scrapePhoto && data.photo && ImageScraper.isUrl(data.photo)) {
-                                try {
-                                    const wikilink = await ImageScraper.scrapeAndSave(
-                                        this.app,
-                                        data.photo,
-                                        data.name || 'Contact',
-                                        this.settings.photoAssetFolder
-                                    );
-                                    data.photo = wikilink;
-                                    new Notice('✓ Photo downloaded and saved');
-                                } catch (error) {
-                                    Logger.error('Main', 'Photo scrape failed', error);
-                                    new Notice('⚠ Photo download failed — keeping original URL');
-                                }
-                            }
-
-                            await createContact(
-                                this.app,
-                                schema,
-                                data,
-                                this.settings
-                            );
-                            await this.index.scanVault();
-                            this.index.trigger("change");
-                        },
-                        {},
-                        this.settings.defaultScrapeEnabled,
-                    );
-                    modal.open();
-                };
-
-                // Single-schema optimization: skip picker
-                if (schemas.length === 1) {
-                    openForm(schemas[0]);
-                    return;
-                }
-
-                // Multiple schemas: show picker
-                const picker = new SchemaPickerModal(
-                    this.app,
-                    schemas,
-                    openForm
-                );
-                picker.open();
+                this.openNewPersonFlow();
             },
         });
 
@@ -343,6 +221,71 @@ export default class OrbitPlugin extends Plugin {
         });
 
         // Orbit loaded successfully
+    }
+
+    /**
+     * Schema-aware "New Person" flow — shared by the command and Hub Add button.
+     *
+     * If multiple schemas exist (built-in + user), shows a picker first.
+     * If only one schema is available, opens the form directly.
+     */
+    openNewPersonFlow(): void {
+        const schemas = this.schemaLoader.getSchemas();
+        if (schemas.length === 0) {
+            new Notice("No schemas available");
+            return;
+        }
+
+        const openForm = (schema: SchemaDef) => {
+            const modal = new OrbitFormModal(
+                this.app,
+                schema,
+                async (data) => {
+                    // Handle photo scraping if requested
+                    if (data._scrapePhoto && data.photo && ImageScraper.isUrl(data.photo)) {
+                        try {
+                            const wikilink = await ImageScraper.scrapeAndSave(
+                                this.app,
+                                data.photo,
+                                data.name || 'Contact',
+                                this.settings.photoAssetFolder
+                            );
+                            data.photo = wikilink;
+                            new Notice('✓ Photo downloaded and saved');
+                        } catch (error) {
+                            Logger.error('Main', 'Photo scrape failed', error);
+                            new Notice('⚠ Photo download failed — keeping original URL');
+                        }
+                    }
+
+                    await createContact(
+                        this.app,
+                        schema,
+                        data,
+                        this.settings
+                    );
+                    await this.index.scanVault();
+                    this.index.trigger("change");
+                },
+                {},
+                this.settings.defaultScrapeEnabled,
+            );
+            modal.open();
+        };
+
+        // Single-schema optimization: skip picker
+        if (schemas.length === 1) {
+            openForm(schemas[0]);
+            return;
+        }
+
+        // Multiple schemas: show picker
+        const picker = new SchemaPickerModal(
+            this.app,
+            schemas,
+            openForm
+        );
+        picker.open();
     }
 
     /**

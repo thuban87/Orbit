@@ -149,3 +149,4 @@ tags:
 - [x] Phase 10 — Polish, Integration & Final Settings (legacy fixes, ribbon Hub, manifest v0.9.0, BRAT prep)
 - [x] Phase 11 — Image Scraping (ImageScraper, photo settings, scrape-on-create, reactive scrape, ScrapeConfirmModal)
 - [x] Phase 11.5 — Image Scraping Tests (+55 tests, 640 total)
+- [x] Post-Overhaul Bug Fixes — File placement, command consolidation, empty fields, AI debug logging

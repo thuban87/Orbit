@@ -124,13 +124,12 @@ export async function createContact(
         // Always set the tag from settings
         fm.tags = [settings.personTag];
 
-        // Set all form data values
+        // Set all form data values — always write every schema field,
+        // even if empty, so users can see which properties to fill in
         for (const field of schema.fields) {
-            const value = formData[field.key];
             if (field.key === 'name') continue; // name is the filename, not frontmatter
-            if (value !== undefined && value !== '') {
-                fm[field.key] = value;
-            }
+            const value = formData[field.key];
+            fm[field.key] = value ?? field.default ?? '';
         }
 
         // Always set last_contact to today if not provided

@@ -158,13 +158,13 @@ describe('createContact', () => {
         expect(getCapturedFm().name).toBeUndefined();
     });
 
-    it('skips empty form values in frontmatter', async () => {
+    it('writes empty form values as empty strings in frontmatter', async () => {
         const { app, getCapturedFm } = setupApp();
         const settings = createSettings({ contactsFolder: 'P' });
 
         await createContact(app, testSchema, { name: 'Alice', birthday: '' }, settings);
 
-        expect(getCapturedFm().birthday).toBeUndefined();
+        expect(getCapturedFm().birthday).toBe('');
     });
 
     it('sets last_contact to today when not provided', async () => {

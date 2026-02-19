@@ -23,6 +23,7 @@ export const newPersonSchema: SchemaDef = {
             type: 'dropdown',
             label: 'Category',
             options: ['Family', 'Friends', 'Work', 'Community'],
+            default: 'Family',
             required: true,
         },
         {
@@ -68,7 +69,4 @@ export const newPersonSchema: SchemaDef = {
         },
     ],
     submitLabel: 'Create Contact',
-    output: {
-        path: 'People/{{name}}.md',
-    },
 };

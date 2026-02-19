@@ -25,8 +25,8 @@ describe('newPersonSchema', () => {
         expect(newPersonSchema.submitLabel).toBe('Create Contact');
     });
 
-    it('has an output path defined', () => {
-        expect(newPersonSchema.output?.path).toBeDefined();
+    it('has no hardcoded output path (uses contactsFolder setting)', () => {
+        expect(newPersonSchema.output).toBeUndefined();
     });
 
     // ── Required Fields ─────────────────────────────────────────

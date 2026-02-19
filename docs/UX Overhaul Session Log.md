@@ -940,3 +940,53 @@ Next Steps:
 - Address the bugs discovered during 11a testing (file placement, command renaming, empty fields)
 - Consider Phase 12+ features (relationship graph, dashboard stats, etc.)
 ```
+
+### Post-Overhaul Bug Fixes
+```
+Date: 2026-02-19
+Focus: Fix 4 bugs discovered during Phase 11 testing — file placement, command consolidation, empty fields, AI debug logging
+
+Completed:
+Bug 1 — File Placement:
+- [x] Removed hardcoded output.path from new-person.schema.ts (was People/{{name}}.md)
+- [x] ContactManager now uses contactsFolder setting with People fallback
+
+Bug 2 — Command Consolidation:
+- [x] Removed duplicate new-person command (was hardcoded to newPersonSchema)
+- [x] Renamed new-contact-from-schema to new-person (schema-aware flow)
+- [x] Extracted SchemaPickerModal to src/modals/SchemaPickerModal.ts (shared module)
+- [x] OrbitHubModal.handleAdd() now delegates to plugin.openNewPersonFlow()
+- [x] Added openNewPersonFlow() method to OrbitPlugin (schema detection + picker or direct form)
+
+Bug 3 — Empty Fields Not Written:
+- [x] Changed createContact frontmatter loop to always write all schema fields
+- [x] Empty fields are now written as empty strings instead of being skipped
+
+Bug 4 — AI Debug Prompt Logging:
+- [x] Added Logger.debug call in assemblePrompt() to log fully assembled prompt
+- [x] Existing generate() debug log already covers provider/model info
+
+Follow-up fix (same session):
+- [x] Added default: Family to category dropdown (first option wasnt submitted when unchanged)
+- [x] Changed command name to title case New Person
+
+Files Changed:
+- src/schemas/new-person.schema.ts (MODIFIED — removed output.path, added category default)
+- src/services/ContactManager.ts (MODIFIED — always write all schema fields)
+- src/services/AiService.ts (MODIFIED — assemblePrompt debug logging)
+- src/main.ts (MODIFIED — removed duplicate command, added openNewPersonFlow, extracted SchemaPickerModal)
+- src/modals/SchemaPickerModal.ts (NEW — shared schema picker modal)
+- src/modals/OrbitHubModal.ts (MODIFIED — handleAdd delegates to plugin.openNewPersonFlow)
+- test/unit/schemas/new-person-schema.test.ts (MODIFIED — updated output.path assertion)
+- test/unit/services/contact-manager.test.ts (MODIFIED — updated empty fields assertion)
+
+Testing: 640 tests pass (39 files), npm run build succeeds
+Deployed: test vault via npm run deploy:test
+Manual verification: Brad confirmed all 4 fixes and follow-up fix working
+
+Issues Discovered:
+- None
+
+Next Steps:
+- Consider Phase 12+ features (relationship graph, dashboard stats, etc.)
+```
