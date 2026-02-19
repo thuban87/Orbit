@@ -2,6 +2,7 @@ import { App, TFile, Notice, debounce, MarkdownView } from "obsidian";
 import { OrbitIndex } from "./OrbitIndex";
 import { OrbitSettings } from "../settings";
 import { OrbitContact } from "../types";
+import { Logger } from "../utils/logger";
 
 /**
  * LinkListener - The "Tether"
@@ -158,7 +159,7 @@ export class LinkListener {
 
             new Notice(`✓ Updated "${contact.name}" - last contact: ${dateStr}`);
         } catch (error) {
-            console.error("Orbit: Failed to update contact", error);
+            Logger.error('LinkListener', 'Failed to update contact', error);
             new Notice(`Failed to update "${contact.name}"`);
         }
     }

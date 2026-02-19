@@ -10,6 +10,7 @@ import { newPersonSchema } from "./schemas/new-person.schema";
 import { createContact } from "./services/ContactManager";
 import { SchemaLoader } from "./schemas/loader";
 import type { SchemaDef } from "./schemas/types";
+import { Logger } from "./utils/logger";
 
 /**
  * FuzzySuggestModal for picking a schema from the registry.
@@ -47,6 +48,9 @@ export default class OrbitPlugin extends Plugin {
     async onload() {
         // Load settings
         await this.loadSettings();
+
+        // Initialize Logger level from settings
+        Logger.setLevel(this.settings.logLevel);
 
         // Initialize the schema loader
         this.schemaLoader = new SchemaLoader(this.app, this.settings.schemaFolder);
@@ -340,6 +344,8 @@ export default class OrbitPlugin extends Plugin {
 
     async saveSettings() {
         await this.saveData(this.settings);
+        // Update Logger level immediately
+        Logger.setLevel(this.settings.logLevel);
         // Update the index with new settings and re-scan
         await this.index.updateSettings(this.settings);
         // Update link listener settings

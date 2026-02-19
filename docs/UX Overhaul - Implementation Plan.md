@@ -1023,7 +1023,7 @@ interface MessageContext {
 
 ---
 
-## Phase 9: Debug Logging System
+## Phase 9: Debug Logging System ✅
 
 **Goal:** Create a gated, centralized logging system controlled by settings toggles.
 
@@ -1115,7 +1115,7 @@ export class Logger {
 
 ---
 
-## Phase 9.5: Debug Logging Tests
+## Phase 9.5: Debug Logging Tests ✅
 
 **Goal:** ≥80% unit + integration coverage on Phase 9 code.
 

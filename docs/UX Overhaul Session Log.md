@@ -788,3 +788,45 @@ Next Steps:
 - Phase 9.5: Debug Logging Tests
 ```
 
+### Phase 9 + 9.5
+```
+Date: 2026-02-18
+Focus: Debug Logging System — Settings-controlled Logger + Tests
+
+Completed:
+- [x] Added logLevel field to OrbitSettings interface and DEFAULT_SETTINGS (default: 'off')
+- [x] Added "Diagnostics" section with log level dropdown at bottom of settings tab
+- [x] Logger.setLevel() called from onload() and saveSettings() in main.ts
+- [x] Replaced 6 raw console.log calls in OrbitIndex.dumpIndex() with Logger.debug()
+- [x] Replaced console.log in OrbitIndex.updateSettings() with Logger.debug()
+- [x] Replaced console.error in OrbitIndex.saveStateToDisk() with Logger.error()
+- [x] Replaced console.error in FuelTooltip.tsx with Logger.error()
+- [x] Replaced console.error in LinkListener.ts with Logger.error()
+- [x] Phase 9.5 tests: diagnostics-settings (10 tests), logging-flow (9 tests)
+- [x] Updated orbit-index.test.ts (4 tests updated for Logger format)
+
+Files Changed:
+- src/settings.ts (MODIFIED — logLevel field, Diagnostics dropdown section)
+- src/main.ts (MODIFIED — Logger init on load, update on save)
+- src/services/OrbitIndex.ts (MODIFIED — 8 console calls → Logger)
+- src/components/FuelTooltip.tsx (MODIFIED — console.error → Logger.error)
+- src/services/LinkListener.ts (MODIFIED — console.error → Logger.error)
+- test/helpers/factories.ts (MODIFIED — logLevel default in createSettings)
+- test/unit/orbit-index.test.ts (MODIFIED — 4 tests updated for Logger.debug/error format)
+- test/unit/settings/diagnostics-settings.test.ts (NEW — 10 unit tests)
+- test/integration/logging-flow.test.ts (NEW — 9 integration tests)
+
+Testing: 585 tests pass (36 files), npm run build succeeds
+Deployed: test vault via npm run deploy:test
+Manual verification: Verbose mode shows [Orbit:OrbitIndex] debug output, Off mode suppresses all
+
+Issues Discovered:
+- Expired Facebook CDN photo URLs cause browser 403 errors in console (not Logger-related)
+- These are browser-level network errors from <img> tags, not suppressible via Logger
+- Future fix: add onError handler to avatar <img> in ContactCard.tsx for fallback
+
+Next Steps:
+- Phase 10: Polish, Integration & Final Settings
+- Image scraping/local storage feature (planned separately)
+- Asset folder path should be a settings option (hardcoded currently)
+```

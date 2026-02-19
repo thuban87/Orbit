@@ -7,7 +7,7 @@ tags:
 ---
 # Orbit - Feature Priority List
 
-**Last Updated:** February 16, 2026
+**Last Updated:** February 18, 2026
 **Version:** 0.1.0
 
 ---
@@ -144,6 +144,6 @@ tags:
 - [x] Phase 7.5 — AI Provider Tests (+100 tests, 502 total)
 - [x] Phase 8 — AI Message Suggest Feature (AiResultModal, AiResult component, context extraction, dynamic placeholders)
 - [x] Phase 8.5 — AI Message Suggest Tests (+71 tests, 566 total)
-- [ ] Phase 9 — Debug Logging System
-- [ ] Phase 9.5 — Debug Logging Tests
+- [x] Phase 9 — Debug Logging System (settings-controlled Logger, replace all console calls)
+- [x] Phase 9.5 — Debug Logging Tests (+19 tests, 585 total)
 - [ ] Phase 10 — Polish, Integration & Final Settings

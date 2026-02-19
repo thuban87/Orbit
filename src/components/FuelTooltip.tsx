@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { OrbitContact } from "../types";
 import { useOrbitOptional } from "../context/OrbitContext";
+import { Logger } from "../utils/logger";
 
 interface FuelTooltipProps {
     contact: OrbitContact;
@@ -42,7 +43,7 @@ export function FuelTooltip({
                         setLoading(false);
                     }
                 } catch (error) {
-                    console.error("Orbit: Failed to read fuel", error);
+                    Logger.error('FuelTooltip', 'Failed to read fuel', error);
                     if (!cancelled) {
                         setFuel(null);
                         setLoading(false);

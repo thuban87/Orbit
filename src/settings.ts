@@ -2,6 +2,7 @@ import { App, Notice, Platform, PluginSettingTab, Setting } from "obsidian";
 import OrbitPlugin from "./main";
 import { FolderSuggest } from "./utils/FolderSuggest";
 import { DEFAULT_PROMPT_TEMPLATE } from "./services/AiService";
+import { Logger, type LogLevel } from "./utils/logger";
 
 /**
  * AI provider type — determines which provider implementation is active.
@@ -38,6 +39,8 @@ export interface OrbitSettings {
     aiCustomEndpoint: string;
     /** Custom model name (only used when aiProvider = 'custom') */
     aiCustomModel: string;
+    /** Debug log level — controls console output verbosity */
+    logLevel: LogLevel;
 }
 
 export const DEFAULT_SETTINGS: OrbitSettings = {
@@ -55,6 +58,7 @@ export const DEFAULT_SETTINGS: OrbitSettings = {
     aiPromptTemplate: DEFAULT_PROMPT_TEMPLATE,
     aiCustomEndpoint: "",
     aiCustomModel: "",
+    logLevel: "off",
 };
 
 /** Labels shown in the AI provider dropdown */
@@ -225,6 +229,9 @@ export class OrbitSettingTab extends PluginSettingTab {
 
         // ── AI Provider Section ──────────────────────────────────
         this.displayAiSettings(containerEl);
+
+        // ── Diagnostics Section ─────────────────────────────────
+        this.displayDiagnosticsSettings(containerEl);
     }
 
     /**
@@ -392,5 +399,34 @@ export class OrbitSettingTab extends PluginSettingTab {
                         });
                 });
         }
+    }
+
+    /**
+     * Render the Diagnostics settings section.
+     * Controls Logger output level for debugging.
+     */
+    private displayDiagnosticsSettings(containerEl: HTMLElement): void {
+        new Setting(containerEl).setName("Diagnostics").setHeading();
+
+        const LOG_LEVEL_LABELS: Record<LogLevel, string> = {
+            off: "Off",
+            error: "Errors",
+            warn: "Errors + warnings",
+            debug: "Verbose (all)",
+        };
+
+        new Setting(containerEl)
+            .setName("Debug log level")
+            .setDesc("Controls how much diagnostic output Orbit writes to the developer console.")
+            .addDropdown((dropdown) => {
+                for (const [key, label] of Object.entries(LOG_LEVEL_LABELS)) {
+                    dropdown.addOption(key, label);
+                }
+                dropdown.setValue(this.plugin.settings.logLevel);
+                dropdown.onChange(async (value) => {
+                    this.plugin.settings.logLevel = value as LogLevel;
+                    await this.plugin.saveSettings();
+                });
+            });
     }
 }

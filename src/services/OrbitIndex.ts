@@ -1,5 +1,6 @@
 import { App, TFile, TFolder, CachedMetadata, Events } from "obsidian";
 import { OrbitSettings } from "../settings";
+import { Logger } from "../utils/logger";
 import {
     OrbitContact,
     Frequency,
@@ -9,7 +10,6 @@ import {
     parseDate,
     isValidFrequency,
 } from "../types";
-import { Logger } from "../utils/logger";
 
 /**
  * OrbitIndex - The "Radar"
@@ -262,9 +262,9 @@ export class OrbitIndex extends Events {
      * Dump the current index to console for debugging.
      */
     dumpIndex(): void {
-        console.log("=== Orbit Index Dump ===");
-        console.log(`Total Contacts: ${this.contacts.size}`);
-        console.log("------------------------");
+        Logger.debug('OrbitIndex', '=== Orbit Index Dump ===');
+        Logger.debug('OrbitIndex', `Total Contacts: ${this.contacts.size}`);
+        Logger.debug('OrbitIndex', '------------------------');
 
         for (const contact of this.getContactsByStatus()) {
             // BUG: toISOString() returns UTC — off-by-one near midnight. Fix in Phase 1.
@@ -272,7 +272,7 @@ export class OrbitIndex extends Events {
                 ? contact.lastContact.toISOString().split("T")[0]
                 : "Never";
 
-            console.log(`
+            Logger.debug('OrbitIndex', `
 Name: ${contact.name}
 Status: ${contact.status.toUpperCase()}
 Frequency: ${contact.frequency}
@@ -335,7 +335,7 @@ Photo: ${contact.photo ? "✓" : "✗"}
             );
             // console.log("Orbit: State saved to disk for AI agents.");
         } catch (error) {
-            console.error("Orbit: Failed to save state to disk", error);
+            Logger.error('OrbitIndex', 'Failed to save state to disk', error);
         }
     }
 
@@ -345,7 +345,7 @@ Photo: ${contact.photo ? "✓" : "✗"}
     async updateSettings(settings: OrbitSettings): Promise<void> {
         this.settings = settings;
         await this.scanVault();
-        console.log(`Orbit: Re-scanned vault. Found ${this.contacts.size} contacts.`);
+        Logger.debug('OrbitIndex', `Re-scanned vault. Found ${this.contacts.size} contacts.`);
         this.trigger("change");
         await this.saveStateToDisk(); // Auto-save after settings change
     }

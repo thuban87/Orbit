@@ -9,6 +9,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { OrbitIndex } from '../../src/services/OrbitIndex';
 import { TFile, CachedMetadata, createMockApp } from '../mocks/obsidian';
 import { createTFile, createCachedMetadata, createSettings } from '../helpers/factories';
+import { Logger } from '../../src/utils/logger';
 
 // ─── Test Setup ─────────────────────────────────────────────────
 
@@ -634,19 +635,21 @@ describe('OrbitIndex - getContact', () => {
 // ═══════════════════════════════════════════════════════════════
 
 describe('OrbitIndex - dumpIndex', () => {
-    it('logs contacts to console', async () => {
+    it('logs contacts via Logger.debug', async () => {
         const { file, cache } = createPersonFile('Alice');
         const cacheMap = new Map<TFile, CachedMetadata>([[file, cache]]);
         const { index } = setupIndex({ files: [file], cacheMap });
 
         await index.scanVault();
+        Logger.setLevel('debug');
         const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => { });
 
         index.dumpIndex();
 
-        expect(consoleSpy).toHaveBeenCalledWith('=== Orbit Index Dump ===');
-        expect(consoleSpy).toHaveBeenCalledWith('Total Contacts: 1');
+        expect(consoleSpy).toHaveBeenCalledWith('[Orbit:OrbitIndex]', '=== Orbit Index Dump ===');
+        expect(consoleSpy).toHaveBeenCalledWith('[Orbit:OrbitIndex]', 'Total Contacts: 1');
         consoleSpy.mockRestore();
+        Logger.setLevel('off');
     });
 
     it('logs "Never" when lastContact is null', async () => {
@@ -658,23 +661,28 @@ describe('OrbitIndex - dumpIndex', () => {
         const { index } = setupIndex({ files: [file], cacheMap });
 
         await index.scanVault();
+        Logger.setLevel('debug');
         const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => { });
 
         index.dumpIndex();
 
-        const loggedStrings = consoleSpy.mock.calls.map(c => String(c[0]));
-        expect(loggedStrings.some(s => s.includes('Never'))).toBe(true);
+        // Logger.debug passes the source as first arg and the message as second
+        const loggedMessages = consoleSpy.mock.calls.map(c => String(c[1] ?? ''));
+        expect(loggedMessages.some(s => s.includes('Never'))).toBe(true);
         consoleSpy.mockRestore();
+        Logger.setLevel('off');
     });
 
     it('handles empty index', () => {
         const { index } = setupIndex();
+        Logger.setLevel('debug');
         const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => { });
 
         index.dumpIndex();
 
-        expect(consoleSpy).toHaveBeenCalledWith('Total Contacts: 0');
+        expect(consoleSpy).toHaveBeenCalledWith('[Orbit:OrbitIndex]', 'Total Contacts: 0');
         consoleSpy.mockRestore();
+        Logger.setLevel('off');
     });
 });
 
@@ -691,15 +699,18 @@ describe('OrbitIndex - saveStateToDisk', () => {
         await index.scanVault();
         app.vault.adapter.write.mockRejectedValue(new Error('Disk full'));
 
+        Logger.setLevel('error');
         const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
 
         // Should not throw
         await expect((index as any).saveStateToDisk()).resolves.not.toThrow();
         expect(consoleSpy).toHaveBeenCalledWith(
-            'Orbit: Failed to save state to disk',
+            '[Orbit:OrbitIndex]',
+            'Failed to save state to disk',
             expect.any(Error)
         );
         consoleSpy.mockRestore();
+        Logger.setLevel('off');
     });
 });
 

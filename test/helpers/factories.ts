@@ -78,6 +78,7 @@ export function createSettings(overrides: Partial<OrbitSettings> = {}): OrbitSet
         aiPromptTemplate: overrides.aiPromptTemplate ?? 'Test prompt for {{name}}',
         aiCustomEndpoint: overrides.aiCustomEndpoint ?? '',
         aiCustomModel: overrides.aiCustomModel ?? '',
+        logLevel: overrides.logLevel ?? 'off',
     };
 }
 
