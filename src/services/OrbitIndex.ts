@@ -1,6 +1,7 @@
 import { App, TFile, TFolder, CachedMetadata, Events } from "obsidian";
 import { OrbitSettings } from "../settings";
 import { Logger } from "../utils/logger";
+import { formatLocalDate } from "../utils/dates";
 import {
     OrbitContact,
     Frequency,
@@ -267,9 +268,8 @@ export class OrbitIndex extends Events {
         Logger.debug('OrbitIndex', '------------------------');
 
         for (const contact of this.getContactsByStatus()) {
-            // BUG: toISOString() returns UTC — off-by-one near midnight. Fix in Phase 1.
             const lastContactStr = contact.lastContact
-                ? contact.lastContact.toISOString().split("T")[0]
+                ? formatLocalDate(contact.lastContact)
                 : "Never";
 
             Logger.debug('OrbitIndex', `
@@ -297,9 +297,8 @@ Photo: ${contact.photo ? "✓" : "✗"}
                 filePath: contact.file.path,
                 category: contact.category || null,
                 frequency: contact.frequency,
-                // BUG: toISOString() returns UTC — off-by-one near midnight. Fix in Phase 1.
                 lastContact: contact.lastContact
-                    ? contact.lastContact.toISOString().split("T")[0]
+                    ? formatLocalDate(contact.lastContact)
                     : null,
                 status: contact.status,
                 daysSinceContact:
@@ -312,9 +311,8 @@ Photo: ${contact.photo ? "✓" : "✗"}
                         : contact.daysUntilDue,
                 socialBattery: contact.socialBattery || null,
                 photo: contact.photo || null,
-                // BUG: toISOString() returns UTC — off-by-one near midnight. Fix in Phase 1.
                 snoozeUntil: contact.snoozeUntil
-                    ? contact.snoozeUntil.toISOString().split("T")[0]
+                    ? formatLocalDate(contact.snoozeUntil)
                     : null,
                 lastInteraction: contact.lastInteraction || null,
                 birthday: contact.birthday || null,

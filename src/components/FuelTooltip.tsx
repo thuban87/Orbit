@@ -11,6 +11,12 @@ interface FuelTooltipProps {
     onMouseLeave?: () => void;
 }
 
+/** Structured fuel line types for safe JSX rendering. */
+type FuelLine =
+    | { type: "listItem"; text: string; bold: string[] }
+    | { type: "subheader"; text: string }
+    | { type: "text"; text: string; bold: string[] };
+
 /**
  * FuelTooltip - Shows Conversational Fuel content on hover.
  */
@@ -23,7 +29,7 @@ export function FuelTooltip({
 }: FuelTooltipProps) {
     const orbit = useOrbitOptional();
     const plugin = orbit?.plugin ?? null;
-    const [fuel, setFuel] = useState<string | null>(null);
+    const [fuelLines, setFuelLines] = useState<FuelLine[] | null>(null);
     const [loading, setLoading] = useState(true);
     const tooltipRef = useRef<HTMLDivElement>(null);
 
@@ -37,15 +43,15 @@ export function FuelTooltip({
             if (plugin) {
                 try {
                     const content = await plugin.app.vault.read(contact.file);
-                    const parsed = parseFuelSection(content);
+                    const rawSection = parseFuelSection(content);
                     if (!cancelled) {
-                        setFuel(parsed);
+                        setFuelLines(rawSection ? parseFuelLines(rawSection) : null);
                         setLoading(false);
                     }
                 } catch (error) {
                     Logger.error('FuelTooltip', 'Failed to read fuel', error);
                     if (!cancelled) {
-                        setFuel(null);
+                        setFuelLines(null);
                         setLoading(false);
                     }
                 }
@@ -53,9 +59,9 @@ export function FuelTooltip({
                 // No plugin (picker mode) — use cached fuel from contact
                 if (!cancelled) {
                     if (contact.fuel && contact.fuel.length > 0) {
-                        setFuel(convertToHtml(contact.fuel.join("\n")));
+                        setFuelLines(parseFuelLines(contact.fuel.join("\n")));
                     } else {
-                        setFuel(null);
+                        setFuelLines(null);
                     }
                     setLoading(false);
                 }
@@ -110,7 +116,7 @@ export function FuelTooltip({
         );
     }
 
-    if (!fuel) {
+    if (!fuelLines) {
         return (
             <div
                 className="orbit-tooltip"
@@ -147,17 +153,89 @@ export function FuelTooltip({
                     {contact.status}
                 </span>
             </div>
-            <div
-                className="orbit-tooltip-content"
-                dangerouslySetInnerHTML={{ __html: fuel }}
-            />
+            <div className="orbit-tooltip-content">
+                <FuelContent lines={fuelLines} />
+            </div>
         </div>
     );
 }
 
 /**
+ * Renders structured fuel lines as safe JSX (no innerHTML).
+ */
+function FuelContent({ lines }: { lines: FuelLine[] }) {
+    const groups: JSX.Element[] = [];
+    let currentList: FuelLine[] = [];
+
+    const flushList = () => {
+        if (currentList.length > 0) {
+            groups.push(
+                <ul key={`list-${groups.length}`}>
+                    {currentList.map((item, i) => (
+                        <li key={i}>{renderInline(item.text, (item as { bold: string[] }).bold)}</li>
+                    ))}
+                </ul>
+            );
+            currentList = [];
+        }
+    };
+
+    for (const line of lines) {
+        if (line.type === "listItem") {
+            currentList.push(line);
+        } else {
+            flushList();
+            if (line.type === "subheader") {
+                groups.push(
+                    <div key={`sub-${groups.length}`} className="orbit-fuel-subheader">
+                        <strong>{line.text}</strong>
+                    </div>
+                );
+            } else {
+                groups.push(
+                    <div key={`text-${groups.length}`}>
+                        {renderInline(line.text, line.bold)}
+                    </div>
+                );
+            }
+        }
+    }
+
+    flushList();
+
+    return <>{groups}</>;
+}
+
+/**
+ * Renders inline text with bold segments as JSX.
+ */
+function renderInline(text: string, bold: string[]): JSX.Element {
+    if (bold.length === 0) return <>{text}</>;
+
+    const parts: JSX.Element[] = [];
+    let remaining = text;
+    let keyIdx = 0;
+
+    for (const b of bold) {
+        const idx = remaining.indexOf(b);
+        if (idx === -1) continue;
+        if (idx > 0) {
+            parts.push(<span key={keyIdx++}>{remaining.slice(0, idx)}</span>);
+        }
+        parts.push(<strong key={keyIdx++}>{b}</strong>);
+        remaining = remaining.slice(idx + b.length);
+    }
+
+    if (remaining) {
+        parts.push(<span key={keyIdx}>{remaining}</span>);
+    }
+
+    return <>{parts}</>;
+}
+
+/**
  * Parse the Conversational Fuel section from file content.
- * Extracts everything between "## Conversational Fuel" and the next heading.
+ * Returns the raw markdown text between "## Conversational Fuel" and the next heading.
  */
 function parseFuelSection(content: string): string | null {
     // Match "## Conversational Fuel" or "## 🗣️ Conversational Fuel"
@@ -179,69 +257,65 @@ function parseFuelSection(content: string): string | null {
     // Extract and clean the section
     const section = restContent.slice(0, endIndex).trim();
 
-    if (!section) return null;
-
-    // Convert markdown-ish content to simple HTML
-    const html = convertToHtml(section);
-    return html;
+    return section || null;
 }
 
 /**
- * Convert simple markdown to HTML for tooltip display.
+ * Parse raw markdown text into structured FuelLine objects.
+ * Handles list items, bold sub-headers, bold inline segments, and plain text.
  */
-function convertToHtml(text: string): string {
+function parseFuelLines(text: string): FuelLine[] {
     const lines = text.split("\n");
-    let html = "";
-    let inList = false;
+    const result: FuelLine[] = [];
 
     for (const line of lines) {
-        const trimmed = line.trim();
+        const trimmed = line.trim().replace(/⛔/g, "🚫");
 
-        if (!trimmed) {
-            if (inList) {
-                html += "</ul>";
-                inList = false;
-            }
-            continue;
-        }
+        if (!trimmed) continue;
 
-        // Bold text: **text**
-        const processed = trimmed
-            .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
-            .replace(/⛔/g, "🚫"); // Normalize emoji
-
-        // List items
+        // List items: "- content"
         if (trimmed.startsWith("- ")) {
-            if (!inList) {
-                html += "<ul>";
-                inList = true;
-            }
-            const content = processed.slice(2).trim();
+            const content = trimmed.slice(2).trim();
             if (content) {
-                html += `<li>${content}</li>`;
+                result.push({
+                    type: "listItem",
+                    text: stripBold(content),
+                    bold: extractBold(content),
+                });
             }
         }
-        // Sub-headers (bold lines)
-        else if (trimmed.startsWith("**") && trimmed.endsWith("**")) {
-            if (inList) {
-                html += "</ul>";
-                inList = false;
-            }
-            html += `<div class="orbit-fuel-subheader">${processed}</div>`;
+        // Sub-headers: entire line is bold "**Header**"
+        else if (trimmed.startsWith("**") && trimmed.endsWith("**") && !trimmed.slice(2, -2).includes("**")) {
+            result.push({
+                type: "subheader",
+                text: trimmed.slice(2, -2),
+            });
         }
-        // Regular text
+        // Regular text (may contain inline bold)
         else {
-            if (inList) {
-                html += "</ul>";
-                inList = false;
-            }
-            html += `<div>${processed}</div>`;
+            result.push({
+                type: "text",
+                text: stripBold(trimmed),
+                bold: extractBold(trimmed),
+            });
         }
     }
 
-    if (inList) {
-        html += "</ul>";
-    }
+    return result;
+}
 
-    return html;
+/** Extract all bold segment strings from markdown text. */
+function extractBold(text: string): string[] {
+    const matches: string[] = [];
+    const regex = /\*\*([^*]+)\*\*/g;
+    let match: RegExpExecArray | null;
+    while ((match = regex.exec(text)) !== null) {
+        matches.push(match[1]);
+    }
+    return matches;
+}
+
+/** Strip bold markers from markdown text, leaving the inner content. */
+function stripBold(text: string): string {
+    return text.replace(/\*\*([^*]+)\*\*/g, "$1");
 }

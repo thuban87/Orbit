@@ -68,7 +68,7 @@ describe('AI suggest — full pipeline', () => {
             category: 'Friends',
             daysSinceContact: 14,
             socialBattery: 'Charger',
-            lastContact: new Date('2026-02-02'),
+            lastContact: new Date('2026-02-02T12:00:00'),
             lastInteraction: 'text',
         });
 
@@ -130,7 +130,7 @@ category: Work
             category: 'Friends',
             daysSinceContact: 14,
             socialBattery: 'Charger',
-            lastContact: new Date('2026-02-02'),
+            lastContact: new Date('2026-02-02T12:00:00'),
             lastInteraction: 'text',
         });
 

@@ -9,6 +9,7 @@
  */
 import { requestUrl } from 'obsidian';
 import { Logger } from '../utils/logger';
+import { formatLocalDate } from '../utils/dates';
 import type { OrbitSettings } from '../settings';
 import type { OrbitContact } from '../types';
 
@@ -95,7 +96,7 @@ export function extractContext(contact: OrbitContact, fileContent: string): Mess
     // Format last interaction info
     let lastInteraction = 'No previous interaction recorded';
     if (contact.lastContact) {
-        const dateStr = contact.lastContact.toISOString().split('T')[0];
+        const dateStr = formatLocalDate(contact.lastContact);
         const type = contact.lastInteraction ?? 'unknown';
         lastInteraction = `${dateStr} (${type})`;
     }

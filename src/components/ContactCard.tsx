@@ -4,6 +4,7 @@ import { Menu, Notice } from "obsidian";
 import { OrbitContact } from "../types";
 import { useOrbitOptional } from "../context/OrbitContext";
 import { FuelTooltip } from "./FuelTooltip";
+import { formatLocalDate } from "../utils/dates";
 
 interface ContactCardProps {
     contact: OrbitContact;
@@ -144,7 +145,7 @@ export function ContactCard({ contact, mode = "sidebar", onSelect, selected }: C
 
     const markAsContacted = async () => {
         if (!plugin || !refreshContacts) return;
-        const today = new Date().toISOString().split("T")[0];
+        const today = formatLocalDate();
         try {
             await plugin.app.fileManager.processFrontMatter(
                 contact.file,
@@ -163,7 +164,7 @@ export function ContactCard({ contact, mode = "sidebar", onSelect, selected }: C
         if (!plugin || !refreshContacts) return;
         const snoozeDate = new Date();
         snoozeDate.setDate(snoozeDate.getDate() + days);
-        const snoozeStr = snoozeDate.toISOString().split("T")[0];
+        const snoozeStr = formatLocalDate(snoozeDate);
 
         try {
             await plugin.app.fileManager.processFrontMatter(

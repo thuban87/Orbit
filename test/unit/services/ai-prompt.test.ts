@@ -70,7 +70,7 @@ describe('extractContext', () => {
 
     it('should format lastInteraction with date and type', () => {
         const contact = createOrbitContact({
-            lastContact: new Date('2026-02-02'),
+            lastContact: new Date('2026-02-02T12:00:00'),
             lastInteraction: 'text',
         });
         const ctx = extractContext(contact, SAMPLE_FILE);

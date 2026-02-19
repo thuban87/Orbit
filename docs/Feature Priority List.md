@@ -8,7 +8,7 @@ tags:
 # Orbit - Feature Priority List
 
 **Last Updated:** February 18, 2026
-**Version:** 0.1.0
+**Version:** 0.9.0
 
 ---
 
@@ -146,4 +146,4 @@ tags:
 - [x] Phase 8.5 — AI Message Suggest Tests (+71 tests, 566 total)
 - [x] Phase 9 — Debug Logging System (settings-controlled Logger, replace all console calls)
 - [x] Phase 9.5 — Debug Logging Tests (+19 tests, 585 total)
-- [ ] Phase 10 — Polish, Integration & Final Settings
+- [x] Phase 10 — Polish, Integration & Final Settings (legacy fixes, ribbon Hub, manifest v0.9.0, BRAT prep)

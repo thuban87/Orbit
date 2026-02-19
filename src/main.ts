@@ -11,6 +11,7 @@ import { createContact } from "./services/ContactManager";
 import { SchemaLoader } from "./schemas/loader";
 import type { SchemaDef } from "./schemas/types";
 import { Logger } from "./utils/logger";
+import { formatLocalDate } from "./utils/dates";
 
 /**
  * FuzzySuggestModal for picking a schema from the registry.
@@ -61,9 +62,11 @@ export default class OrbitPlugin extends Plugin {
         // Register the Orbit view early so it's available
         this.registerView(VIEW_TYPE_ORBIT, (leaf) => new OrbitView(leaf, this));
 
-        // Add ribbon icon to open Orbit view
-        this.addRibbonIcon("users", "Open Orbit", () => {
-            this.activateView();
+        // Add ribbon icon to open Orbit Hub
+        this.addRibbonIcon("users", "Orbit Hub", () => {
+            const contacts = this.index.getContactsByStatus();
+            const modal = new OrbitHubModal(this, contacts);
+            modal.open();
         });
 
         // Wait for metadataCache to be ready before scanning
@@ -185,10 +188,10 @@ export default class OrbitPlugin extends Plugin {
             },
         });
 
-        // Register Update Contacts command (Orbit Hub)
+        // Register Orbit Hub command
         this.addCommand({
-            id: "update-contacts",
-            name: "Update Contacts",
+            id: "orbit-hub",
+            name: "Orbit Hub",
             callback: () => {
                 const contacts = this.index.getContactsByStatus();
                 const modal = new OrbitHubModal(this, contacts);
@@ -289,13 +292,13 @@ export default class OrbitPlugin extends Plugin {
                     : `${contact.daysSinceContact} days ago`;
                 overdue.push(`- 🔴 ${contact.name} (last: ${days})`);
             } else if (contact.lastContact && contact.lastContact >= weekAgo) {
-                const dateStr = contact.lastContact.toISOString().split("T")[0];
+                const dateStr = formatLocalDate(contact.lastContact);
                 contacted.push(`- ✅ ${contact.name} (${dateStr})`);
             }
         }
 
         // Build report
-        const dateStr = today.toISOString().split("T")[0];
+        const dateStr = formatLocalDate(today);
         let report = `# Orbit Weekly Digest\n`;
         report += `**Generated:** ${dateStr}\n\n`;
 

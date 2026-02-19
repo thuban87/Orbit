@@ -830,3 +830,47 @@ Next Steps:
 - Image scraping/local storage feature (planned separately)
 - Asset folder path should be a settings option (hardcoded currently)
 ```
+
+### Phase 10
+```
+Date: 2026-02-18
+Focus: Polish, Integration & Final Settings — Legacy code fixes, ribbon wiring, manifest/BRAT prep
+
+Completed:
+- [x] FuelTooltip: Replaced dangerouslySetInnerHTML with safe JSX rendering (parseFuelLines + FuelContent component)
+- [x] Replaced 8 toISOString().split('T')[0] calls with formatLocalDate() across 5 files
+  - OrbitIndex.ts (3 locations, BUG comments removed)
+  - LinkListener.ts (1 location, BUG comment removed)
+  - AiService.ts (1 location)
+  - main.ts (2 locations in generateWeeklyDigest)
+  - ContactCard.tsx (2 locations — markAsContacted, snoozeContact)
+- [x] Ribbon icon now opens OrbitHubModal directly (not just sidebar view)
+- [x] Command renamed: Update Contacts -> Orbit Hub (id: orbit-hub)
+- [x] manifest.json updated: v0.9.0, minAppVersion 1.10.0, community-review-ready description
+- [x] versions.json created at repo root for BRAT compatibility
+- [x] Fixed 2 test assertions for UTC->local date change (new Date with noon UTC)
+
+Files Changed:
+- src/components/FuelTooltip.tsx (MODIFIED — dangerouslySetInnerHTML -> JSX, parseFuelLines + FuelContent)
+- src/components/ContactCard.tsx (MODIFIED — formatLocalDate for markAsContacted + snooze)
+- src/services/OrbitIndex.ts (MODIFIED — formatLocalDate for dump + state export, BUG comments removed)
+- src/services/LinkListener.ts (MODIFIED — formatLocalDate for updateContactDate)
+- src/services/AiService.ts (MODIFIED — formatLocalDate for extractContext)
+- src/main.ts (MODIFIED — ribbon opens Hub, command renamed, formatLocalDate for digest)
+- manifest.json (MODIFIED — v0.9.0, minAppVersion 1.10.0, description updated)
+- versions.json (NEW — BRAT compatibility mapping)
+- test/unit/services/ai-prompt.test.ts (MODIFIED — UTC-safe date in assertion)
+- test/integration/ai-suggest-flow.test.ts (MODIFIED — UTC-safe dates in 2 assertions)
+
+Testing: 585 tests pass (36 files), npm run build succeeds
+Deployed: test vault via npm run deploy:test
+Manual verification: Ribbon opens Hub, command palette shows Orbit Hub, tooltip renders correctly
+
+Issues Discovered:
+- None new this session
+
+Next Steps:
+- Asset folder setting (for future image scraping feature)
+- Image scraping/local storage feature (separate project)
+- Consider adding Phase 10.5 tests if desired
+```
