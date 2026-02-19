@@ -7,7 +7,7 @@ tags:
 ---
 # Orbit - Feature Priority List
 
-**Last Updated:** February 18, 2026
+**Last Updated:** February 19, 2026
 **Version:** 0.9.0
 
 ---
@@ -147,3 +147,5 @@ tags:
 - [x] Phase 9 — Debug Logging System (settings-controlled Logger, replace all console calls)
 - [x] Phase 9.5 — Debug Logging Tests (+19 tests, 585 total)
 - [x] Phase 10 — Polish, Integration & Final Settings (legacy fixes, ribbon Hub, manifest v0.9.0, BRAT prep)
+- [x] Phase 11 — Image Scraping (ImageScraper, photo settings, scrape-on-create, reactive scrape, ScrapeConfirmModal)
+- [x] Phase 11.5 — Image Scraping Tests (+55 tests, 640 total)

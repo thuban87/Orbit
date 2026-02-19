@@ -1,5 +1,6 @@
 import { App, TFile, TFolder, CachedMetadata, Events } from "obsidian";
 import { OrbitSettings } from "../settings";
+import { ImageScraper } from "../utils/ImageScraper";
 import { Logger } from "../utils/logger";
 import { formatLocalDate } from "../utils/dates";
 import {
@@ -23,6 +24,8 @@ export class OrbitIndex extends Events {
     private settings: OrbitSettings;
     private contacts: Map<string, OrbitContact> = new Map();
     private initialized = false;
+    /** Paths currently being scraped — prevents re-entrancy on frontmatter updates */
+    private recentlyScraping: Set<string> = new Set();
 
     constructor(app: App, settings: OrbitSettings) {
         super();
@@ -186,6 +189,7 @@ export class OrbitIndex extends Events {
 
     /**
      * Handle file change event - update the contact if applicable.
+     * Also detects when a photo URL is added to trigger reactive scraping.
      */
     handleFileChange(file: TFile): void {
         if (this.isIgnoredPath(file.path)) {
@@ -193,9 +197,17 @@ export class OrbitIndex extends Events {
             return;
         }
 
+        // Capture old contact before parsing to detect photo changes
+        const oldContact = this.contacts.get(file.path);
+
         const contact = this.parseContact(file);
         if (contact) {
             this.contacts.set(file.path, contact);
+
+            // Detect photo URL changes (reactive scrape)
+            if (!this.recentlyScraping.has(file.path)) {
+                this.detectPhotoChange(file, oldContact, contact);
+            }
         } else {
             // File no longer matches criteria, remove from index
             this.contacts.delete(file.path);
@@ -203,6 +215,68 @@ export class OrbitIndex extends Events {
 
         this.trigger("change");
         this.saveStateToDisk(); // Non-blocking save
+    }
+
+    /**
+     * Detect when a photo field changes to a URL and trigger reactive scraping.
+     * Checks the `photoScrapeOnEdit` setting to determine behavior.
+     */
+    private detectPhotoChange(file: TFile, oldContact: OrbitContact | undefined, newContact: OrbitContact): void {
+        const oldPhoto = oldContact?.photo ?? '';
+        const newPhoto = newContact.photo ?? '';
+
+        // Only react when photo actually changed and new value is a URL
+        if (oldPhoto === newPhoto) return;
+        if (!newPhoto || !ImageScraper.isUrl(newPhoto)) return;
+
+        const mode = this.settings.photoScrapeOnEdit;
+        if (mode === 'never') return;
+
+        if (mode === 'always') {
+            // Auto-scrape without prompting
+            this.autoScrape(file, newPhoto, newContact.name);
+        } else {
+            // mode === 'ask' — emit event for main.ts to show dialog
+            this.trigger('photo-scrape-prompt', file, newPhoto, newContact.name);
+        }
+    }
+
+    /**
+     * Auto-scrape a photo URL and update frontmatter with the wikilink.
+     * Used in 'always' mode.
+     */
+    private async autoScrape(file: TFile, photoUrl: string, contactName: string): Promise<void> {
+        this.markScraping(file.path);
+        try {
+            const wikilink = await ImageScraper.scrapeAndSave(
+                this.app,
+                photoUrl,
+                contactName,
+                this.settings.photoAssetFolder
+            );
+            await this.app.fileManager.processFrontMatter(file, (fm) => {
+                fm.photo = wikilink;
+            });
+            Logger.debug('OrbitIndex', `Auto-scraped photo for ${contactName}`);
+        } catch (error) {
+            Logger.error('OrbitIndex', `Auto-scrape failed for ${contactName}`, error);
+        } finally {
+            this.unmarkScraping(file.path);
+        }
+    }
+
+    /**
+     * Mark a file path as currently being scraped (re-entrancy guard).
+     */
+    markScraping(path: string): void {
+        this.recentlyScraping.add(path);
+    }
+
+    /**
+     * Unmark a file path after scraping is complete.
+     */
+    unmarkScraping(path: string): void {
+        this.recentlyScraping.delete(path);
     }
 
     /**

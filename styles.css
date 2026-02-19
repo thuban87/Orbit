@@ -517,6 +517,25 @@
   font-style: italic;
 }
 
+/* ── Scrape Toggle ────────────────────────── */
+.orbit-field__scrape-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.orbit-field__scrape-toggle input[type="checkbox"] {
+  accent-color: var(--interactive-accent);
+}
+
+.orbit-field__scrape-label {
+  user-select: none;
+}
+
 /* ================================
    Contact Picker Modal (Phase 3)
    ================================ */

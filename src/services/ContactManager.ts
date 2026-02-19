@@ -12,7 +12,7 @@
 import { App, TFile, TFolder, normalizePath } from 'obsidian';
 import type { SchemaDef } from '../schemas/types';
 import type { OrbitSettings } from '../settings';
-import { buildContactPath } from '../utils/paths';
+import { buildContactPath, ensureFolderExists } from '../utils/paths';
 import { Logger } from '../utils/logger';
 import { formatLocalDate } from '../utils/dates';
 
@@ -24,33 +24,6 @@ const DEFAULT_TEMPLATE = `# {{name}}
 
 ## Interaction Log
 `;
-
-/**
- * Ensure a folder path exists in the vault, creating intermediate
- * directories as needed. Silently succeeds if the folder already exists.
- */
-async function ensureFolderExists(app: App, folderPath: string): Promise<void> {
-    const normalized = normalizePath(folderPath);
-    if (!normalized) return;
-
-    const existing = app.vault.getFolderByPath(normalized);
-    if (existing) return;
-
-    // Split path and create each segment
-    const parts = normalized.split('/');
-    let current = '';
-    for (const part of parts) {
-        current = current ? `${current}/${part}` : part;
-        const folder = app.vault.getFolderByPath(current);
-        if (!folder) {
-            try {
-                await app.vault.createFolder(current);
-            } catch {
-                // Folder may have been created by another process
-            }
-        }
-    }
-}
 
 /**
  * Strip YAML frontmatter from a template string, returning only the body.

@@ -41,6 +41,12 @@ export interface OrbitSettings {
     aiCustomModel: string;
     /** Debug log level — controls console output verbosity */
     logLevel: LogLevel;
+    /** Folder where scraped contact photos are stored */
+    photoAssetFolder: string;
+    /** Whether the "Download and save" toggle is checked by default */
+    defaultScrapeEnabled: boolean;
+    /** Behavior when a URL is added to an existing contact's photo field */
+    photoScrapeOnEdit: 'ask' | 'always' | 'never';
 }
 
 export const DEFAULT_SETTINGS: OrbitSettings = {
@@ -59,6 +65,9 @@ export const DEFAULT_SETTINGS: OrbitSettings = {
     aiCustomEndpoint: "",
     aiCustomModel: "",
     logLevel: "off",
+    photoAssetFolder: "Resources/Assets/Orbit",
+    defaultScrapeEnabled: false,
+    photoScrapeOnEdit: 'ask',
 };
 
 /** Labels shown in the AI provider dropdown */
@@ -227,11 +236,74 @@ export class OrbitSettingTab extends PluginSettingTab {
                     });
             });
 
+        // ── Photos Section ───────────────────────────────────────
+        this.displayPhotoSettings(containerEl);
+
         // ── AI Provider Section ──────────────────────────────────
         this.displayAiSettings(containerEl);
 
         // ── Diagnostics Section ─────────────────────────────────
         this.displayDiagnosticsSettings(containerEl);
+    }
+
+    /**
+     * Render the Photos settings section.
+     * Controls photo scraping behavior and asset folder.
+     */
+    private displayPhotoSettings(containerEl: HTMLElement): void {
+        new Setting(containerEl).setName("Photos").setHeading();
+
+        // Photo asset folder
+        new Setting(containerEl)
+            .setName("Photo asset folder")
+            .setDesc(
+                "Folder where downloaded contact photos are saved."
+            )
+            .addText((text) => {
+                new FolderSuggest(this.app, text.inputEl);
+                text
+                    .setPlaceholder("Resources/Assets/Orbit")
+                    .setValue(this.plugin.settings.photoAssetFolder)
+                    .onChange(async (value) => {
+                        this.plugin.settings.photoAssetFolder = value.trim();
+                        await this.plugin.saveSettings();
+                    });
+            });
+
+        // Default scrape toggle
+        new Setting(containerEl)
+            .setName("Download photos by default")
+            .setDesc(
+                "When enabled, the 'Download and save to vault' option is checked by default when adding or editing a contact."
+            )
+            .addToggle((toggle) =>
+                toggle
+                    .setValue(this.plugin.settings.defaultScrapeEnabled)
+                    .onChange(async (value) => {
+                        this.plugin.settings.defaultScrapeEnabled = value;
+                        await this.plugin.saveSettings();
+                    })
+            );
+
+        // Photo scrape on edit behavior
+        new Setting(containerEl)
+            .setName("When photo URL is added to existing contact")
+            .setDesc(
+                "Controls what happens when you manually add a photo URL to an existing contact's frontmatter."
+            )
+            .addDropdown((dropdown) =>
+                dropdown
+                    .addOptions({
+                        ask: 'Ask every time',
+                        always: 'Always download',
+                        never: 'Never download',
+                    })
+                    .setValue(this.plugin.settings.photoScrapeOnEdit)
+                    .onChange(async (value) => {
+                        this.plugin.settings.photoScrapeOnEdit = value as 'ask' | 'always' | 'never';
+                        await this.plugin.saveSettings();
+                    })
+            );
     }
 
     /**

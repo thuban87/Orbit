@@ -15,23 +15,27 @@ export class OrbitFormModal extends ReactModal {
     private schema: SchemaDef;
     private onSubmitCallback: (data: Record<string, any>) => void;
     private initialValues: Record<string, any>;
+    private defaultScrapeEnabled: boolean;
 
     /**
      * @param app - Obsidian App instance
      * @param schema - Schema definition driving the form layout
      * @param onSubmit - Callback invoked with collected form data on submit
      * @param initialValues - Optional pre-populated values for form fields
+     * @param defaultScrapeEnabled - Whether the scrape toggle defaults to on
      */
     constructor(
         app: App,
         schema: SchemaDef,
         onSubmit: (data: Record<string, any>) => void,
-        initialValues: Record<string, any> = {}
+        initialValues: Record<string, any> = {},
+        defaultScrapeEnabled = false
     ) {
         super(app);
         this.schema = schema;
         this.onSubmitCallback = onSubmit;
         this.initialValues = initialValues;
+        this.defaultScrapeEnabled = defaultScrapeEnabled;
     }
 
     onOpen(): void {
@@ -65,6 +69,9 @@ export class OrbitFormModal extends ReactModal {
             },
             onCancel: () => this.close(),
             initialValues: this.initialValues,
+            app: this.app,
+            defaultScrapeEnabled: this.defaultScrapeEnabled,
         });
     }
 }
+

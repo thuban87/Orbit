@@ -79,6 +79,9 @@ export function createSettings(overrides: Partial<OrbitSettings> = {}): OrbitSet
         aiCustomEndpoint: overrides.aiCustomEndpoint ?? '',
         aiCustomModel: overrides.aiCustomModel ?? '',
         logLevel: overrides.logLevel ?? 'off',
+        photoAssetFolder: overrides.photoAssetFolder ?? 'Resources/Assets/Orbit',
+        defaultScrapeEnabled: overrides.defaultScrapeEnabled ?? false,
+        photoScrapeOnEdit: (overrides as any).photoScrapeOnEdit ?? 'ask',
     };
 }
 

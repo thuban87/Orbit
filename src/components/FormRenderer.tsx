@@ -8,6 +8,7 @@
  */
 import React, { useState, useCallback, FormEvent } from 'react';
 import type { SchemaDef, FieldDef } from '../schemas/types';
+import type { App } from 'obsidian';
 
 interface FormRendererProps {
     /** Schema defining the fields to render */
@@ -18,6 +19,10 @@ interface FormRendererProps {
     onCancel?: () => void;
     /** Optional pre-populated values for form fields */
     initialValues?: Record<string, any>;
+    /** Optional Obsidian App instance — enables universal photo preview and scrape toggle */
+    app?: App;
+    /** Default scrape toggle state (from settings) */
+    defaultScrapeEnabled?: boolean;
 }
 
 /**
@@ -43,12 +48,52 @@ function buildInitialState(
 }
 
 /**
+ * Checks if a string looks like a URL.
+ */
+function isUrl(value: string): boolean {
+    return value.startsWith('http://') || value.startsWith('https://');
+}
+
+/**
+ * Resolves a photo value to a displayable src URL.
+ *
+ * Supports: HTTP URLs (passthrough), wikilinks ([[file]]),
+ * and vault-local paths (resolved via adapter).
+ *
+ * @returns A src string for <img>, or null if unresolvable
+ */
+function resolvePhotoSrc(value: string, app?: App): string | null {
+    if (!value) return null;
+
+    // URL — pass through as-is
+    if (isUrl(value)) return value;
+
+    if (!app) return null;
+
+    // Wikilink — strip [[ ]] and resolve via metadataCache
+    if (value.startsWith('[[') && value.endsWith(']]')) {
+        const linkpath = value.slice(2, -2);
+        const resolved = app.metadataCache.getFirstLinkpathDest(linkpath, '');
+        if (resolved) {
+            return app.vault.getResourcePath(resolved);
+        }
+        return null;
+    }
+
+    // Vault-local path — resolve via adapter
+    return app.vault.adapter.getResourcePath(value);
+}
+
+/**
  * Renders a single form field based on its FieldDef.
  */
 function renderField(
     field: FieldDef,
     value: any,
-    onChange: (key: string, value: any) => void
+    onChange: (key: string, value: any) => void,
+    app?: App,
+    scrapePhoto?: boolean,
+    onScrapeChange?: (checked: boolean) => void
 ): React.ReactElement {
     const fieldId = `orbit-field-${field.key}`;
 
@@ -126,22 +171,25 @@ function renderField(
                 />
             );
 
-        case 'photo':
+        case 'photo': {
+            const photoSrc = resolvePhotoSrc(value ?? '', app);
+            const showScrapeToggle = value && isUrl(value);
+
             return (
                 <div className="orbit-field__photo-container">
                     <input
                         id={fieldId}
                         className="orbit-field__input"
-                        type="url"
+                        type="text"
                         value={value ?? ''}
-                        placeholder={field.placeholder ?? 'https://...'}
+                        placeholder={field.placeholder ?? 'Enter a URL, local path, or wikilink'}
                         required={field.required ?? false}
                         onChange={(e) => onChange(field.key, e.target.value)}
                     />
-                    {value && (
+                    {photoSrc && (
                         <div className="orbit-field__photo-preview">
                             <img
-                                src={value}
+                                src={photoSrc}
                                 alt="Photo preview"
                                 className="orbit-field__photo-img"
                                 onError={(e) => {
@@ -160,8 +208,22 @@ function renderField(
                             </span>
                         </div>
                     )}
+                    {showScrapeToggle && onScrapeChange && (
+                        <label className="orbit-field__scrape-toggle" htmlFor="orbit-field-scrape-photo">
+                            <input
+                                id="orbit-field-scrape-photo"
+                                type="checkbox"
+                                checked={!!scrapePhoto}
+                                onChange={(e) => onScrapeChange(e.target.checked)}
+                            />
+                            <span className="orbit-field__scrape-label">
+                                Download and save to vault
+                            </span>
+                        </label>
+                    )}
                 </div>
             );
+        }
 
         case 'text':
         default:
@@ -182,10 +244,11 @@ function renderField(
 /**
  * FormRenderer — React component that renders a dynamic form from a SchemaDef.
  */
-export function FormRenderer({ schema, onSubmit, onCancel, initialValues }: FormRendererProps): React.ReactElement {
+export function FormRenderer({ schema, onSubmit, onCancel, initialValues, app, defaultScrapeEnabled }: FormRendererProps): React.ReactElement {
     const [formData, setFormData] = useState<Record<string, any>>(() =>
         buildInitialState(schema.fields, initialValues)
     );
+    const [scrapePhoto, setScrapePhoto] = useState(defaultScrapeEnabled ?? false);
 
     const handleChange = useCallback((key: string, value: any) => {
         setFormData((prev) => ({ ...prev, [key]: value }));
@@ -193,8 +256,9 @@ export function FormRenderer({ schema, onSubmit, onCancel, initialValues }: Form
 
     const handleSubmit = useCallback((e: FormEvent) => {
         e.preventDefault();
-        onSubmit(formData);
-    }, [formData, onSubmit]);
+        // Attach scrape flag as internal key (underscore prefix = not a frontmatter field)
+        onSubmit({ ...formData, _scrapePhoto: scrapePhoto });
+    }, [formData, scrapePhoto, onSubmit]);
 
     return (
         <form className="orbit-form" onSubmit={handleSubmit}>
@@ -216,7 +280,14 @@ export function FormRenderer({ schema, onSubmit, onCancel, initialValues }: Form
                             >
                                 {field.label}
                             </label>
-                            {renderField(field, formData[field.key], handleChange)}
+                            {renderField(
+                                field,
+                                formData[field.key],
+                                handleChange,
+                                field.type === 'photo' ? app : undefined,
+                                field.type === 'photo' ? scrapePhoto : undefined,
+                                field.type === 'photo' ? setScrapePhoto : undefined
+                            )}
                             {field.description && (
                                 <span className="orbit-field__description">
                                     {field.description}

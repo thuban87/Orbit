@@ -58,8 +58,8 @@ export const editPersonSchema: SchemaDef = {
             key: 'photo',
             type: 'photo',
             label: 'Photo',
-            placeholder: 'https://...',
-            description: 'Paste a URL to the contact\'s photo',
+            placeholder: 'Enter a URL, local path, or wikilink',
+            description: 'Paste a URL, local path, or wikilink to the contact\'s photo',
         },
         {
             key: 'contact_link',

@@ -1196,6 +1196,96 @@ export class Logger {
 
 ---
 
+## Phase 11a: Image Scraping — Photo Field, Settings & Pipeline
+
+**Goal:** Download contact photos from URLs and store them locally in the vault, preventing broken images from expired CDN links. Update the photo field UX to accept all photo formats.
+
+### Design Decisions
+
+| Decision | Choice | Rationale |
+|----------|--------|-----------||
+| Storage format | Wikilink `[[Name - Photo.jpg]]` | Obsidian-native, portable, already supported by ContactCard |
+| Naming convention | `{sanitizedName} - Photo.{ext}` | Human-readable, easy to wikilink |
+| Conflict handling | Append number (`Photo-2.jpg`) | Preserve history |
+| Extension fallback | `.webp` | Most common modern web format |
+| HTTP client | `requestUrl()` | Required by Obsidian plugin guidelines |
+| Photo preview | Universal (URL, vault path, wikilink) | Better UX across all photo types |
+
+### Deliverables
+- Updated photo field UX: `type="text"` input (was `type="url"`), placeholder/description updated to mention URL, local path, and wikilink
+- Universal photo preview in `FormRenderer.tsx` — resolves URLs, vault paths, and wikilinks for live preview
+- Conditional "Download and save to vault" toggle — shown only when value is a URL
+- New **Photos** settings section: `photoAssetFolder` (FolderSuggest), `defaultScrapeEnabled` (toggle)
+- `src/utils/ImageScraper.ts` — Stateless utility: `requestUrl()` download, Content-Type/URL/`.webp` extension detection, `vault.createBinary()` save, conflict numbering, wikilink return
+- `ensureFolderExists()` extracted from `ContactManager.ts` to `utils/paths.ts` (shared utility)
+- Scrape pipeline wired into `ContactManager.createContact()` and `OrbitHubModal.handleEdit()`
+
+### Files to Create/Modify
+
+| File | Action |
+|------|--------|
+| `src/schemas/new-person.schema.ts` | **MODIFY** — Photo field placeholder + description |
+| `src/schemas/edit-person.schema.ts` | **MODIFY** — Photo field placeholder + description |
+| `src/components/FormRenderer.tsx` | **MODIFY** — `type="text"`, universal preview, scrape toggle |
+| `src/settings.ts` | **MODIFY** — `photoAssetFolder`, `defaultScrapeEnabled`, Photos section |
+| `src/utils/ImageScraper.ts` | **NEW** — Image download + save pipeline |
+| `src/utils/paths.ts` | **MODIFY** — Add `ensureFolderExists()` from ContactManager |
+| `src/services/ContactManager.ts` | **MODIFY** — Import `ensureFolderExists` from paths, wire scrape on create |
+| `src/modals/OrbitHubModal.ts` | **MODIFY** — Wire scrape on edit |
+| `test/helpers/factories.ts` | **MODIFY** — Add new settings defaults |
+
+### Verification
+- Build succeeds
+- "New Person" modal shows updated photo field with text input, universal preview, and scrape toggle
+- Entering a URL shows scrape toggle; entering a vault path or wikilink does not
+- Submitting with scrape enabled downloads the image, saves to asset folder, and stores wikilink in frontmatter
+- Edit Person modal has the same scrape functionality
+- Non-URL photos preview correctly in the form
+- Settings persist correctly
+
+---
+
+## Phase 11b: Reactive Scrape on Existing Files & Tests
+
+**Goal:** Detect when a URL is added to an existing contact's `photo` frontmatter field and offer to download it. Write comprehensive tests for both Phase 11a and 11b.
+
+### Deliverables
+- `photoScrapeOnEdit` dropdown setting: Ask every time (default), Always download, Never download
+- Photo change detection in `OrbitIndex.handleFileChange()` — compares old vs new photo values
+- `ScrapeConfirmModal.ts` — Simple confirmation dialog ("Download this photo and save locally?")
+- Re-entrancy guard (`recentlyScraping: Set<string>`) — prevents infinite loop when scrape updates frontmatter
+- Event-driven: OrbitIndex emits `'photo-scrape-prompt'`, `main.ts` listens and opens dialog
+
+### Test Files
+
+| File | Type | Covers |
+|------|------|--------|
+| `test/unit/utils/image-scraper.test.ts` | Unit | `scrapeAndSave()`, extension detection, conflict numbering, wikilink return |
+| `test/unit/components/form-renderer-photo.test.tsx` | Unit | Updated photo field: text input, universal preview, scrape toggle |
+| `test/unit/settings/photo-settings.test.ts` | Unit | Photos section, FolderSuggest, defaults, scrapeOnEdit dropdown |
+| `test/integration/photo-scrape-flow.test.ts` | Integration | Full flow: URL → toggle → submit → scrape → wikilink in frontmatter |
+| `test/unit/services/orbit-index-scrape.test.ts` | Unit | Photo change detection, re-entrancy guard, event emission |
+
+### Files to Create/Modify
+
+| File | Action |
+|------|--------|
+| `src/settings.ts` | **MODIFY** — `photoScrapeOnEdit` setting + dropdown |
+| `src/services/OrbitIndex.ts` | **MODIFY** — Photo change detection + re-entrancy guard |
+| `src/modals/ScrapeConfirmModal.ts` | **NEW** — Simple confirmation dialog |
+| `src/main.ts` | **MODIFY** — Listen for scrape prompt event |
+| Test files (5) | **NEW/MODIFY** — See test table above |
+
+### Verification
+- Build succeeds
+- All tests pass with ≥80% coverage on new files
+- Editing a person file's `photo` frontmatter to a URL triggers the dialog (Ask mode)
+- Always mode auto-scrapes without dialog
+- Never mode ignores URL changes
+- Re-entrancy guard prevents infinite loop
+
+---
+
 ## Phase Summary
 
 | Phase | Focus | Key Deliverables | Est. Complexity |
@@ -1220,6 +1310,8 @@ export class Logger {
 | 9 | Debug Logging | Settings toggle for Logger (created in Phase 1), existing code cleanup | Low |
 | 9.5 | Logging Tests | Unit + integration tests for Phase 9 | Low |
 | 10 | Polish & Integration | Ribbon menu, manifest, versions.json, legacy fixes, docs | Medium |
+| 11a | Image Scraping | Photo field UX, ImageScraper utility, settings, form integration | Medium |
+| 11b | Reactive Scrape + Tests | Photo change detection, confirmation dialog, all Phase 11 tests | Medium |
 
 ---
 
@@ -1254,9 +1346,11 @@ graph TD
     P6 --> P10
     P8 --> P10
     P9 --> P10
+    P10 --> P11a["Phase 11a: Image Scraping"]
+    P11a --> P11b["Phase 11b: Reactive Scrape + Tests"]
 ```
 
-> **Note:** Phases 1-5 (modal system) and Phases 7-8 (AI) are two independent tracks that can be developed in parallel. Phase 7 has no dependency on Phases 3-5 and can start after Phase 0. Phase 6 (user schemas) depends on Phase 2. Phase 9 (debug logging settings + cleanup) depends on Phase 1 where `Logger` was created — it can be done any time after Phase 1. Phase 10 depends on everything. Each X.5 testing phase must be completed before moving to the next implementation phase.
+> **Note:** Phases 1-5 (modal system) and Phases 7-8 (AI) are two independent tracks that can be developed in parallel. Phase 7 has no dependency on Phases 3-5 and can start after Phase 0. Phase 6 (user schemas) depends on Phase 2. Phase 9 (debug logging settings + cleanup) depends on Phase 1 where `Logger` was created — it can be done any time after Phase 1. Phase 10 depends on everything. Phase 11 (image scraping) depends on Phase 10. Each X.5 testing phase must be completed before moving to the next implementation phase.
 
 ---
 
@@ -1296,21 +1390,13 @@ npm run test -- --watch     # Watch mode during development
 
 Feature ideas captured during implementation for future consideration.
 
-### Auto-Scrape Contact Photos
+### Auto-Scrape Contact Photos ✅ (Implemented as Phase 11)
 **Origin:** Phase 3 session — manual photo management is tedious with expiring CDN URLs.
 
-**Concept:** When a user pastes a URL into the `photo` frontmatter field, the plugin automatically:
-1. Downloads the image to a configurable vault folder (e.g., `Resources/Assets/Orbit/`)
-2. Replaces the URL in frontmatter with a local vault path or wikilink
-3. Ensures the image persists without expiring tokens
+**Implemented:** Phase 11a (scrape on new contact creation) + Phase 11b (reactive scrape on existing files) + Phase 11.5 (55 tests).
 
-**Considerations:**
-- Add a plugin setting for the photo storage folder path
-- Use Obsidian's `requestUrl` for the download (not `fetch`)
-- Handle filename conflicts (append hash or timestamp)
-- Could trigger on frontmatter change events or via a manual command
-- Should be opt-in via a settings toggle
+See `src/utils/ImageScraper.ts`, `src/modals/ScrapeConfirmModal.ts`, and the `photoScrapeEnabled`/`photoScrapeOnEdit`/`photoAssetFolder` settings.
 
 ---
 
-*Created: 2026-02-13 | Updated: 2026-02-18 | Status: Complete (Phase 10 shipped) | Version: v0.9.0 | Author: Agent*
+*Created: 2026-02-13 | Updated: 2026-02-19 | Status: In Progress | Version: v0.9.0 | Author: Agent*

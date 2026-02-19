@@ -6,11 +6,13 @@ import { LinkListener } from "./services/LinkListener";
 import { AiService } from "./services/AiService";
 import { OrbitFormModal } from "./modals/OrbitFormModal";
 import { OrbitHubModal } from "./modals/OrbitHubModal";
+import { ScrapeConfirmModal } from "./modals/ScrapeConfirmModal";
 import { newPersonSchema } from "./schemas/new-person.schema";
 import { createContact } from "./services/ContactManager";
 import { SchemaLoader } from "./schemas/loader";
 import type { SchemaDef } from "./schemas/types";
 import { Logger } from "./utils/logger";
+import { ImageScraper } from "./utils/ImageScraper";
 import { formatLocalDate } from "./utils/dates";
 
 /**
@@ -134,6 +136,41 @@ export default class OrbitPlugin extends Plugin {
             })
         );
 
+        // Listen for reactive photo scrape prompts from OrbitIndex
+        this.registerEvent(
+            this.index.on('photo-scrape-prompt', (file: TFile, photoUrl: string, contactName: string) => {
+                const modal = new ScrapeConfirmModal(
+                    this.app,
+                    contactName,
+                    async () => {
+                        // User chose "Download"
+                        this.index.markScraping(file.path);
+                        try {
+                            const wikilink = await ImageScraper.scrapeAndSave(
+                                this.app,
+                                photoUrl,
+                                contactName,
+                                this.settings.photoAssetFolder
+                            );
+                            await this.app.fileManager.processFrontMatter(file, (fm) => {
+                                fm.photo = wikilink;
+                            });
+                            new Notice('✓ Photo downloaded and saved');
+                        } catch (error) {
+                            Logger.error('Main', 'Reactive photo scrape failed', error);
+                            new Notice('⚠ Photo download failed');
+                        } finally {
+                            this.index.unmarkScraping(file.path);
+                        }
+                    },
+                    () => {
+                        // User chose "Skip" — do nothing
+                    }
+                );
+                modal.open();
+            })
+        );
+
         // Register settings tab
         this.addSettingTab(new OrbitSettingTab(this.app, this));
 
@@ -173,6 +210,23 @@ export default class OrbitPlugin extends Plugin {
                     this.app,
                     newPersonSchema,
                     async (data) => {
+                        // Handle photo scraping if requested
+                        if (data._scrapePhoto && data.photo && ImageScraper.isUrl(data.photo)) {
+                            try {
+                                const wikilink = await ImageScraper.scrapeAndSave(
+                                    this.app,
+                                    data.photo,
+                                    data.name || 'Contact',
+                                    this.settings.photoAssetFolder
+                                );
+                                data.photo = wikilink;
+                                new Notice('✓ Photo downloaded and saved');
+                            } catch (error) {
+                                Logger.error('Main', 'Photo scrape failed', error);
+                                new Notice('⚠ Photo download failed — keeping original URL');
+                            }
+                        }
+
                         await createContact(
                             this.app,
                             newPersonSchema,
@@ -182,7 +236,9 @@ export default class OrbitPlugin extends Plugin {
                         // Refresh the index to pick up the new contact
                         await this.index.scanVault();
                         this.index.trigger("change");
-                    }
+                    },
+                    {},
+                    this.settings.defaultScrapeEnabled,
                 );
                 modal.open();
             },
@@ -215,6 +271,23 @@ export default class OrbitPlugin extends Plugin {
                         this.app,
                         schema,
                         async (data) => {
+                            // Handle photo scraping if requested
+                            if (data._scrapePhoto && data.photo && ImageScraper.isUrl(data.photo)) {
+                                try {
+                                    const wikilink = await ImageScraper.scrapeAndSave(
+                                        this.app,
+                                        data.photo,
+                                        data.name || 'Contact',
+                                        this.settings.photoAssetFolder
+                                    );
+                                    data.photo = wikilink;
+                                    new Notice('✓ Photo downloaded and saved');
+                                } catch (error) {
+                                    Logger.error('Main', 'Photo scrape failed', error);
+                                    new Notice('⚠ Photo download failed — keeping original URL');
+                                }
+                            }
+
                             await createContact(
                                 this.app,
                                 schema,
@@ -223,7 +296,9 @@ export default class OrbitPlugin extends Plugin {
                             );
                             await this.index.scanVault();
                             this.index.trigger("change");
-                        }
+                        },
+                        {},
+                        this.settings.defaultScrapeEnabled,
                     );
                     modal.open();
                 };

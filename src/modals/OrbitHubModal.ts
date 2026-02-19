@@ -23,6 +23,7 @@ import { newPersonSchema } from '../schemas/new-person.schema';
 import { editPersonSchema } from '../schemas/edit-person.schema';
 import { updateFrontmatter, appendToInteractionLog, createContact } from '../services/ContactManager';
 import { extractContext, assemblePrompt } from '../services/AiService';
+import { ImageScraper } from '../utils/ImageScraper';
 import { Logger } from '../utils/logger';
 import type { OrbitContact, LastInteractionType } from '../types';
 import type OrbitPlugin from '../main';
@@ -122,11 +123,33 @@ export class OrbitHubModal extends ReactModal {
             this.plugin.app,
             editPersonSchema,
             async (formData) => {
+                // Handle photo scraping if requested
+                let photoValue = formData.photo ?? '';
+                if (formData._scrapePhoto && photoValue && ImageScraper.isUrl(photoValue)) {
+                    try {
+                        const wikilink = await ImageScraper.scrapeAndSave(
+                            this.plugin.app,
+                            photoValue,
+                            formData.name || contact.name,
+                            this.plugin.settings.photoAssetFolder
+                        );
+                        photoValue = wikilink;
+                        new Notice('✓ Photo downloaded and saved');
+                    } catch (error) {
+                        Logger.error('OrbitHubModal', 'Photo scrape failed', error);
+                        new Notice('⚠ Photo download failed — keeping original URL');
+                    }
+                }
+
                 // Merge only schema-defined fields into frontmatter
                 const updates: Record<string, any> = {};
                 for (const field of editPersonSchema.fields) {
                     if (field.key === 'name') continue; // name is filename, handled separately
-                    updates[field.key] = formData[field.key] ?? '';
+                    if (field.key === 'photo') {
+                        updates.photo = photoValue;
+                    } else {
+                        updates[field.key] = formData[field.key] ?? '';
+                    }
                 }
                 await updateFrontmatter(this.plugin.app, contact.file, updates);
 
@@ -148,6 +171,7 @@ export class OrbitHubModal extends ReactModal {
                 new Notice(`✓ ${formData.name} updated`);
             },
             initialValues,
+            this.plugin.settings.defaultScrapeEnabled,
         );
         modal.open();
     }
@@ -217,12 +241,29 @@ export class OrbitHubModal extends ReactModal {
         this.refresh();
     }
 
-    /** Open the New Person modal (existing Phase 2 flow) */
+    /** Open the New Person modal with image scraping support */
     private handleAdd(): void {
         const modal = new OrbitFormModal(
             this.plugin.app,
             newPersonSchema,
             async (formData) => {
+                // Handle photo scraping if requested
+                if (formData._scrapePhoto && formData.photo && ImageScraper.isUrl(formData.photo)) {
+                    try {
+                        const wikilink = await ImageScraper.scrapeAndSave(
+                            this.plugin.app,
+                            formData.photo,
+                            formData.name || 'Contact',
+                            this.plugin.settings.photoAssetFolder
+                        );
+                        formData.photo = wikilink;
+                        new Notice('✓ Photo downloaded and saved');
+                    } catch (error) {
+                        Logger.error('OrbitHubModal', 'Photo scrape failed during creation', error);
+                        new Notice('⚠ Photo download failed — keeping original URL');
+                    }
+                }
+
                 await createContact(
                     this.plugin.app,
                     newPersonSchema,
@@ -234,7 +275,9 @@ export class OrbitHubModal extends ReactModal {
                 this.contacts = this.plugin.index.getContactsByStatus();
                 this.refresh();
                 new Notice('✓ Contact created');
-            }
+            },
+            {},
+            this.plugin.settings.defaultScrapeEnabled,
         );
         modal.open();
     }

@@ -874,3 +874,69 @@ Next Steps:
 - Image scraping/local storage feature (separate project)
 - Consider adding Phase 10.5 tests if desired
 ```
+
+### Phase 11
+```
+Date: 2026-02-19
+Focus: Image Scraping — Auto-download contact photos from URLs, save locally, update frontmatter
+
+Completed:
+Phase 11a (New Contact Creation):
+- [x] Created ImageScraper utility (requestUrl, extension detection, conflict resolution, wikilink return)
+- [x] Created ensureFolderExists and sanitizeFileName path utilities
+- [x] Added 3 photo settings: photoScrapeEnabled toggle, photoScrapeOnEdit dropdown, photoAssetFolder text
+- [x] Wired scrape-on-create into FormRenderer (photo field type with URL preview + scrape toggle)
+- [x] Added OrbitFormModal scrape pipeline (downloads on submit when toggle enabled)
+- [x] Photo preview in FormRenderer: shows URL preview or resolved vault image
+- [x] Settings UI: dedicated Photos section with all 3 settings
+
+Phase 11b (Reactive Scrape on Existing Files):
+- [x] Added photoScrapeOnEdit setting (Ask/Always/Never dropdown)
+- [x] Implemented photo change detection in OrbitIndex.handleFileChange()
+- [x] Created ScrapeConfirmModal (Download/Skip dialog for ask mode)
+- [x] Added re-entrancy guard (recentlyScraping Set + markScraping/unmarkScraping)
+- [x] Wired photo-scrape-prompt event in main.ts to open ScrapeConfirmModal
+- [x] Auto-scrape in OrbitIndex for always mode
+
+Phase 11.5 (Tests):
+- [x] image-scraper.test.ts — 28 tests (extension detection, filename conflicts, scrapeAndSave pipeline)
+- [x] orbit-index-scrape.test.ts — 14 tests (ask/always/never modes, re-entrancy guard, edge cases)
+- [x] photo-scrape-flow.test.ts — 13 tests (end-to-end integration flows)
+- [x] Added createBinary and addOptions to Obsidian mock
+- [x] Updated test factory defaults for new settings
+
+Files Changed:
+- src/utils/ImageScraper.ts (NEW — 152 lines, scrape pipeline)
+- src/utils/paths.ts (MODIFIED — added ensureFolderExists, sanitizeFileName)
+- src/modals/ScrapeConfirmModal.ts (NEW — 54 lines, confirmation dialog)
+- src/components/FormRenderer.tsx (MODIFIED — photo field type with URL preview + scrape toggle)
+- src/modals/OrbitFormModal.ts (MODIFIED — scrape pipeline on submit)
+- src/modals/OrbitHubModal.ts (MODIFIED — pass app + scrape setting to form)
+- src/services/OrbitIndex.ts (MODIFIED — photo change detection, autoScrape, re-entrancy guard)
+- src/services/ContactManager.ts (MODIFIED — minor integration)
+- src/main.ts (MODIFIED — photo-scrape-prompt event listener, ScrapeConfirmModal wiring)
+- src/settings.ts (MODIFIED — 3 new photo settings + Photos UI section)
+- src/schemas/new-person.schema.ts (MODIFIED — photo field type)
+- src/schemas/edit-person.schema.ts (MODIFIED — photo field type)
+- styles.css (MODIFIED — photo preview + scrape toggle styles)
+- docs/UX Overhaul - Implementation Plan.md (MODIFIED — Phase 11 idea section updated)
+- test/unit/utils/image-scraper.test.ts (NEW — 28 tests)
+- test/unit/services/orbit-index-scrape.test.ts (NEW — 14 tests)
+- test/integration/photo-scrape-flow.test.ts (NEW — 13 tests)
+- test/helpers/factories.ts (MODIFIED — new setting defaults)
+- test/mocks/obsidian.ts (MODIFIED — createBinary + addOptions mocks)
+- test/unit/components/form-renderer.test.tsx (MODIFIED — photo field tests)
+
+Testing: 640 tests pass (39 files), npm run build succeeds
+Deployed: test vault via npm run deploy:test
+Manual verification: Brad confirmed Phase 11a and 11b both working correctly
+
+Issues Discovered:
+- New user creation placing files in random folders (pre-existing, not from this session)
+- Need to remove New Person command and make New Contact from Schema the default
+- New contacts not having all basic fields as frontmatter properties when left blank
+
+Next Steps:
+- Address the bugs discovered during 11a testing (file placement, command renaming, empty fields)
+- Consider Phase 12+ features (relationship graph, dashboard stats, etc.)
+```

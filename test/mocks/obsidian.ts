@@ -80,6 +80,7 @@ export function createMockApp(overrides: {
             getMarkdownFiles: vi.fn(() => files),
             read: vi.fn(async () => ''),
             create: vi.fn(async () => new TFile()),
+            createBinary: vi.fn(async () => new TFile()),
             modify: vi.fn(async () => { }),
             process: vi.fn(async (file: TFile, fn: (data: string) => string) => fn('')),
             delete: vi.fn(async () => { }),
@@ -266,6 +267,7 @@ export class Setting {
     addDropdown(cb: (dropdown: any) => void): this {
         const dropdown = {
             addOption: vi.fn().mockReturnThis(),
+            addOptions: vi.fn().mockReturnThis(),
             setValue: vi.fn().mockReturnThis(),
             onChange: vi.fn().mockReturnThis(),
         };
