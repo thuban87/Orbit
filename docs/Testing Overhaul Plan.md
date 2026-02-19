@@ -384,7 +384,7 @@ Services (`OrbitIndex`, `LinkListener`, `AiService`, `ContactManager`, `ImageScr
 
 ---
 
-## Wave 3: Views + Context — 🟡 MEDIUM EFFORT
+## ✅ Wave 3: Views + Context — 🟡 MEDIUM EFFORT
 
 **Estimated tests:** ~18
 **Session estimate:** ½ session

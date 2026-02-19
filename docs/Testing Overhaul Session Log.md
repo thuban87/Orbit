@@ -190,25 +190,74 @@ Each session entry should include:
 
 ---
 
+## 2026-02-19 - Wave 3: Views + Context (OrbitView, OrbitDashboard, OrbitContext)
+
+**Focus:** Unit tests for the view layer and React context — the Obsidian ItemView shell, root React dashboard component, and context provider with event-driven reactivity.
+
+### Completed:
+
+#### New Test Files
+
+##### `orbit-view.test.ts` — 6 tests (NEW)
+- ✅ `getViewType()` returns `"orbit-view"`
+- ✅ `getDisplayText()` returns `"Orbit"`
+- ✅ `getIcon()` returns `"users"`
+- ✅ `onOpen()` clears `containerEl.children[1]`, adds `orbit-container` class
+- ✅ `onOpen()` creates React root and renders `OrbitDashboard` inside `StrictMode`
+- ✅ `onClose()` unmounts React root and nulls reference
+
+##### `orbit-dashboard.test.tsx` — 4 tests (NEW)
+- ✅ Wraps content in `OrbitProvider` with plugin prop
+- ✅ Renders `BirthdayBanner`, `OrbitHeader`, and `ContactGrid`
+- ✅ Sort change via `OrbitHeader` `onSortChange` updates `ContactGrid` sortMode
+- ✅ Filter change via `OrbitHeader` `onFilterChange` updates `ContactGrid` filterMode
+
+##### `orbit-context.test.tsx` — 8 tests (NEW)
+- ✅ `useOrbit()` throws when used outside `OrbitProvider`
+- ✅ `useOrbit()` returns context value inside `OrbitProvider`
+- ✅ `useOrbitOptional()` returns null outside `OrbitProvider`
+- ✅ `useOrbitOptional()` returns context value inside `OrbitProvider`
+- ✅ `OrbitProvider` calls `index.getContactsByStatus()` on mount
+- ✅ `OrbitProvider` subscribes to `index.on("change")`
+- ✅ Triggering "change" event updates contacts state + `refreshContacts()` callable from consumer
+- ✅ Unmounting provider calls `index.off("change")` to cleanup
+
+### Files Changed:
+
+- `test/unit/views/orbit-view.test.ts` — NEW, 6 tests
+- `test/unit/views/orbit-dashboard.test.tsx` — NEW, 4 tests
+- `test/unit/context/orbit-context.test.tsx` — NEW, 8 tests
+
+### Testing Notes:
+- ✅ Full test suite: **47 files, 769 tests, 0 failures** (up from 751)
+- ✅ All existing tests continue to pass
+- ✅ No flaky behavior observed
+- ✅ Initial `vi.mock` hoisting issue in orbit-view.test.ts fixed with `vi.hoisted()` — standard Vitest pattern
+
+### Blockers/Issues:
+- None
+- No source code bugs discovered
+
+---
+
 ## Next Session Prompt
 
 ```
-Continuing Testing Overhaul. Waves 0-2 are complete.
+Continuing Testing Overhaul. Waves 0-3 are complete.
 
 What was done last session:
-- Wave 2: 64 new component tests across 6 files (4 new + 2 extended)
-- 751 total tests passing (44 files, 0 failures)
+- Wave 3: 18 new view/context tests across 3 files (all new)
+- 769 total tests passing (47 files, 0 failures)
 
-Next up: Wave 3 — Views + Context (OrbitView, OrbitDashboard, OrbitContext)
-- ~18 tests needed, MEDIUM effort
-- Obsidian ItemView bridging, React root mounting, Context provider
-- See Testing Overhaul Plan.md for full spec
+Next up: Wave 4 — Modals (AiResultModal, SchemaPickerModal, ScrapeConfirmModal, OrbitHubModal)
+- ~45 tests needed, MEDIUM-HIGH effort
+- Complex async handlers, multi-mock interactions
+- See Testing Overhaul Plan.md for full spec (lines 471-577)
 
 Key files to reference:
 - docs/Testing Overhaul Plan.md — Full wave breakdown
 - docs/Testing Overhaul Session Log.md — This log
-- src/views/ — Target files
-- src/context/OrbitContext.tsx — Target file
+- src/modals/ — Target files
 - test/mocks/obsidian.ts — Mock infrastructure
 ```
 
@@ -217,16 +266,14 @@ Key files to reference:
 ## Git Commit Message
 
 ```
-test(wave-2): add 64 component tests for 6 React components
+test(wave-3): add 18 view and context tests for OrbitView, OrbitDashboard, OrbitContext
 
-Wave 2 - Components:
-- NEW fuel-tooltip.test.tsx: 13 tests (loading, context modes, parsing, positioning)
-- NEW contact-grid.test.tsx: 10 tests (empty state, categories, filtering, sorting)
-- NEW birthday-banner.test.tsx: 11 tests (date parsing, rollover, fake timers)
-- NEW orbit-header.test.tsx: 7 tests (count, dropdowns, refresh callback)
-- EXT contact-card-modes.test.tsx: +13 tests (context menu, hover timing, photo errors, selected prop)
-- EXT form-renderer.test.tsx: +15 tests (photo preview, resolvePhotoSrc, scrape toggle, onError)
+Wave 3 - Views + Context:
+- NEW orbit-view.test.ts: 6 tests (view metadata, container setup, React root lifecycle)
+- NEW orbit-dashboard.test.tsx: 4 tests (provider wrapping, child components, state wiring)
+- NEW orbit-context.test.tsx: 8 tests (hooks, initial load, event subscription, cleanup)
 
-Test suite: 44 files, 751 tests, 0 failures (was 687)
+Test suite: 47 files, 769 tests, 0 failures (was 751)
 ```
+
 
