@@ -1,5 +1,8 @@
-import { App, TFile, CachedMetadata, Events } from "obsidian";
+import { App, TFile, TFolder, CachedMetadata, Events } from "obsidian";
 import { OrbitSettings } from "../settings";
+import { ImageScraper } from "../utils/ImageScraper";
+import { Logger } from "../utils/logger";
+import { formatLocalDate } from "../utils/dates";
 import {
     OrbitContact,
     Frequency,
@@ -21,6 +24,8 @@ export class OrbitIndex extends Events {
     private settings: OrbitSettings;
     private contacts: Map<string, OrbitContact> = new Map();
     private initialized = false;
+    /** Paths currently being scraped — prevents re-entrancy on frontmatter updates */
+    private recentlyScraping: Set<string> = new Set();
 
     constructor(app: App, settings: OrbitSettings) {
         super();
@@ -40,12 +45,30 @@ export class OrbitIndex extends Events {
     }
 
     /**
-     * Scan the entire vault for person files.
-     * Public so it can be called after settings changes.
+     * Scan the vault for person files.
+     *
+     * When `contactsFolder` is set, uses targeted scanning via getFolderByPath().
+     * When empty, falls back to full vault scan via getMarkdownFiles().
      */
     async scanVault(): Promise<void> {
         this.contacts.clear();
-        const files = this.app.vault.getMarkdownFiles();
+
+        let files: TFile[];
+
+        if (this.settings.contactsFolder) {
+            // Targeted scan — only look in the specified folder
+            const folder = this.app.vault.getFolderByPath(this.settings.contactsFolder);
+            if (folder) {
+                files = this.getFilesFromFolder(folder);
+                Logger.debug('OrbitIndex', `Targeted scan: ${files.length} files in "${this.settings.contactsFolder}"`);
+            } else {
+                Logger.warn('OrbitIndex', `Contacts folder "${this.settings.contactsFolder}" not found, falling back to full vault scan`);
+                files = this.app.vault.getMarkdownFiles();
+            }
+        } else {
+            // Full vault scan (original behavior)
+            files = this.app.vault.getMarkdownFiles();
+        }
 
         for (const file of files) {
             if (this.isIgnoredPath(file.path)) continue;
@@ -55,6 +78,21 @@ export class OrbitIndex extends Events {
                 this.contacts.set(file.path, contact);
             }
         }
+    }
+
+    /**
+     * Recursively collect all markdown files from a folder.
+     */
+    private getFilesFromFolder(folder: TFolder): TFile[] {
+        const files: TFile[] = [];
+        for (const child of folder.children) {
+            if (child instanceof TFile && child.extension === 'md') {
+                files.push(child);
+            } else if (child instanceof TFolder) {
+                files.push(...this.getFilesFromFolder(child));
+            }
+        }
+        return files;
     }
 
     /**
@@ -151,6 +189,7 @@ export class OrbitIndex extends Events {
 
     /**
      * Handle file change event - update the contact if applicable.
+     * Also detects when a photo URL is added to trigger reactive scraping.
      */
     handleFileChange(file: TFile): void {
         if (this.isIgnoredPath(file.path)) {
@@ -158,9 +197,17 @@ export class OrbitIndex extends Events {
             return;
         }
 
+        // Capture old contact before parsing to detect photo changes
+        const oldContact = this.contacts.get(file.path);
+
         const contact = this.parseContact(file);
         if (contact) {
             this.contacts.set(file.path, contact);
+
+            // Detect photo URL changes (reactive scrape)
+            if (!this.recentlyScraping.has(file.path)) {
+                this.detectPhotoChange(file, oldContact, contact);
+            }
         } else {
             // File no longer matches criteria, remove from index
             this.contacts.delete(file.path);
@@ -168,6 +215,68 @@ export class OrbitIndex extends Events {
 
         this.trigger("change");
         this.saveStateToDisk(); // Non-blocking save
+    }
+
+    /**
+     * Detect when a photo field changes to a URL and trigger reactive scraping.
+     * Checks the `photoScrapeOnEdit` setting to determine behavior.
+     */
+    private detectPhotoChange(file: TFile, oldContact: OrbitContact | undefined, newContact: OrbitContact): void {
+        const oldPhoto = oldContact?.photo ?? '';
+        const newPhoto = newContact.photo ?? '';
+
+        // Only react when photo actually changed and new value is a URL
+        if (oldPhoto === newPhoto) return;
+        if (!newPhoto || !ImageScraper.isUrl(newPhoto)) return;
+
+        const mode = this.settings.photoScrapeOnEdit;
+        if (mode === 'never') return;
+
+        if (mode === 'always') {
+            // Auto-scrape without prompting
+            this.autoScrape(file, newPhoto, newContact.name);
+        } else {
+            // mode === 'ask' — emit event for main.ts to show dialog
+            this.trigger('photo-scrape-prompt', file, newPhoto, newContact.name);
+        }
+    }
+
+    /**
+     * Auto-scrape a photo URL and update frontmatter with the wikilink.
+     * Used in 'always' mode.
+     */
+    private async autoScrape(file: TFile, photoUrl: string, contactName: string): Promise<void> {
+        this.markScraping(file.path);
+        try {
+            const wikilink = await ImageScraper.scrapeAndSave(
+                this.app,
+                photoUrl,
+                contactName,
+                this.settings.photoAssetFolder
+            );
+            await this.app.fileManager.processFrontMatter(file, (fm) => {
+                fm.photo = wikilink;
+            });
+            Logger.debug('OrbitIndex', `Auto-scraped photo for ${contactName}`);
+        } catch (error) {
+            Logger.error('OrbitIndex', `Auto-scrape failed for ${contactName}`, error);
+        } finally {
+            this.unmarkScraping(file.path);
+        }
+    }
+
+    /**
+     * Mark a file path as currently being scraped (re-entrancy guard).
+     */
+    markScraping(path: string): void {
+        this.recentlyScraping.add(path);
+    }
+
+    /**
+     * Unmark a file path after scraping is complete.
+     */
+    unmarkScraping(path: string): void {
+        this.recentlyScraping.delete(path);
     }
 
     /**
@@ -228,16 +337,16 @@ export class OrbitIndex extends Events {
      * Dump the current index to console for debugging.
      */
     dumpIndex(): void {
-        console.log("=== Orbit Index Dump ===");
-        console.log(`Total Contacts: ${this.contacts.size}`);
-        console.log("------------------------");
+        Logger.debug('OrbitIndex', '=== Orbit Index Dump ===');
+        Logger.debug('OrbitIndex', `Total Contacts: ${this.contacts.size}`);
+        Logger.debug('OrbitIndex', '------------------------');
 
         for (const contact of this.getContactsByStatus()) {
             const lastContactStr = contact.lastContact
-                ? contact.lastContact.toISOString().split("T")[0]
+                ? formatLocalDate(contact.lastContact)
                 : "Never";
 
-            console.log(`
+            Logger.debug('OrbitIndex', `
 Name: ${contact.name}
 Status: ${contact.status.toUpperCase()}
 Frequency: ${contact.frequency}
@@ -263,7 +372,7 @@ Photo: ${contact.photo ? "✓" : "✗"}
                 category: contact.category || null,
                 frequency: contact.frequency,
                 lastContact: contact.lastContact
-                    ? contact.lastContact.toISOString().split("T")[0]
+                    ? formatLocalDate(contact.lastContact)
                     : null,
                 status: contact.status,
                 daysSinceContact:
@@ -277,7 +386,7 @@ Photo: ${contact.photo ? "✓" : "✗"}
                 socialBattery: contact.socialBattery || null,
                 photo: contact.photo || null,
                 snoozeUntil: contact.snoozeUntil
-                    ? contact.snoozeUntil.toISOString().split("T")[0]
+                    ? formatLocalDate(contact.snoozeUntil)
                     : null,
                 lastInteraction: contact.lastInteraction || null,
                 birthday: contact.birthday || null,
@@ -298,7 +407,7 @@ Photo: ${contact.photo ? "✓" : "✗"}
             );
             // console.log("Orbit: State saved to disk for AI agents.");
         } catch (error) {
-            console.error("Orbit: Failed to save state to disk", error);
+            Logger.error('OrbitIndex', 'Failed to save state to disk', error);
         }
     }
 
@@ -308,7 +417,7 @@ Photo: ${contact.photo ? "✓" : "✗"}
     async updateSettings(settings: OrbitSettings): Promise<void> {
         this.settings = settings;
         await this.scanVault();
-        console.log(`Orbit: Re-scanned vault. Found ${this.contacts.size} contacts.`);
+        Logger.debug('OrbitIndex', `Re-scanned vault. Found ${this.contacts.size} contacts.`);
         this.trigger("change");
         await this.saveStateToDisk(); // Auto-save after settings change
     }

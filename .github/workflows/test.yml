@@ -1,0 +1,51 @@
+name: Test & Coverage
+
+# When does this run?
+# - On every push to main or develop
+# - On every pull request targeting main or develop
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Check out the repo code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Set up Node.js (matches your local version)
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # 3. Install dependencies
+      - name: Install dependencies
+        run: npm ci
+
+      # 4. Run the test suite
+      - name: Run tests
+        run: npm test
+
+      # 5. Run tests with coverage
+      - name: Run coverage
+        run: npm run test:coverage
+
+      # 6. Build the plugin (ensures tests didn't break the build)
+      - name: Build
+        run: npm run build
+
+      # 7. Post coverage summary as a PR comment
+      - name: Coverage Summary
+        if: github.event_name == 'pull_request'
+        uses: davelosert/vitest-coverage-report-action@v2
+        with:
+          json-summary-path: coverage/coverage-summary.json
+          json-final-path: coverage/coverage-final.json

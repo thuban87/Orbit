@@ -1,17 +1,38 @@
-import { Plugin, TFile, WorkspaceLeaf, MarkdownView } from "obsidian";
+import { Plugin, TFile, WorkspaceLeaf, MarkdownView, Notice } from "obsidian";
 import { OrbitSettingTab, OrbitSettings, DEFAULT_SETTINGS } from "./settings";
 import { OrbitIndex } from "./services/OrbitIndex";
 import { OrbitView, VIEW_TYPE_ORBIT } from "./views/OrbitView";
 import { LinkListener } from "./services/LinkListener";
+import { AiService } from "./services/AiService";
+import { OrbitFormModal } from "./modals/OrbitFormModal";
+import { OrbitHubModal } from "./modals/OrbitHubModal";
+import { ScrapeConfirmModal } from "./modals/ScrapeConfirmModal";
+import { SchemaPickerModal } from "./modals/SchemaPickerModal";
+import { createContact } from "./services/ContactManager";
+import { SchemaLoader } from "./schemas/loader";
+import type { SchemaDef } from "./schemas/types";
+import { Logger } from "./utils/logger";
+import { ImageScraper } from "./utils/ImageScraper";
+import { formatLocalDate } from "./utils/dates";
+
+
 
 export default class OrbitPlugin extends Plugin {
     settings: OrbitSettings;
     index: OrbitIndex;
     linkListener: LinkListener;
+    schemaLoader: SchemaLoader;
+    aiService: AiService;
 
     async onload() {
         // Load settings
         await this.loadSettings();
+
+        // Initialize Logger level from settings
+        Logger.setLevel(this.settings.logLevel);
+
+        // Initialize the schema loader
+        this.schemaLoader = new SchemaLoader(this.app, this.settings.schemaFolder);
 
         // Initialize the contact index (will scan when cache is ready)
         this.index = new OrbitIndex(this.app, this.settings);
@@ -19,9 +40,11 @@ export default class OrbitPlugin extends Plugin {
         // Register the Orbit view early so it's available
         this.registerView(VIEW_TYPE_ORBIT, (leaf) => new OrbitView(leaf, this));
 
-        // Add ribbon icon to open Orbit view
-        this.addRibbonIcon("users", "Open Orbit", () => {
-            this.activateView();
+        // Add ribbon icon to open Orbit Hub
+        this.addRibbonIcon("users", "Orbit Hub", () => {
+            const contacts = this.index.getContactsByStatus();
+            const modal = new OrbitHubModal(this, contacts);
+            modal.open();
         });
 
         // Wait for metadataCache to be ready before scanning
@@ -29,10 +52,12 @@ export default class OrbitPlugin extends Plugin {
         if ((this.app.metadataCache as any).initialized) {
             // Already initialized, scan immediately
             await this.index.initialize();
+            await this.schemaLoader.loadSchemas();
         } else {
             // Wait for the "resolved" event (fires once when cache is ready)
             const resolvedHandler = async () => {
                 await this.index.initialize();
+                await this.schemaLoader.loadSchemas();
                 this.index.trigger("change"); // Update UI
             };
             this.registerEvent(
@@ -74,12 +99,51 @@ export default class OrbitPlugin extends Plugin {
         // Initialize the Link Listener (The "Tether")
         this.linkListener = new LinkListener(this.app, this.index, this.settings);
 
+        // Initialize the AI Service and refresh provider config
+        this.aiService = new AiService();
+        this.aiService.refreshProviders(this.settings);
+
         // Subscribe to editor changes for link detection
         this.registerEvent(
             this.app.workspace.on("editor-change", (editor, info) => {
                 if (info.file) {
                     this.linkListener.handleEditorChange(info.file);
                 }
+            })
+        );
+
+        // Listen for reactive photo scrape prompts from OrbitIndex
+        this.registerEvent(
+            this.index.on('photo-scrape-prompt', (file: TFile, photoUrl: string, contactName: string) => {
+                const modal = new ScrapeConfirmModal(
+                    this.app,
+                    contactName,
+                    async () => {
+                        // User chose "Download"
+                        this.index.markScraping(file.path);
+                        try {
+                            const wikilink = await ImageScraper.scrapeAndSave(
+                                this.app,
+                                photoUrl,
+                                contactName,
+                                this.settings.photoAssetFolder
+                            );
+                            await this.app.fileManager.processFrontMatter(file, (fm) => {
+                                fm.photo = wikilink;
+                            });
+                            new Notice('✓ Photo downloaded and saved');
+                        } catch (error) {
+                            Logger.error('Main', 'Reactive photo scrape failed', error);
+                            new Notice('⚠ Photo download failed');
+                        } finally {
+                            this.index.unmarkScraping(file.path);
+                        }
+                    },
+                    () => {
+                        // User chose "Skip" — do nothing
+                    }
+                );
+                modal.open();
             })
         );
 
@@ -113,7 +177,115 @@ export default class OrbitPlugin extends Plugin {
             },
         });
 
+        // Register Orbit Hub command
+        this.addCommand({
+            id: "orbit-hub",
+            name: "Orbit Hub",
+            callback: () => {
+                const contacts = this.index.getContactsByStatus();
+                const modal = new OrbitHubModal(this, contacts);
+                modal.open();
+            },
+        });
+
+        // Register New Person command (schema-aware: shows picker if multiple schemas exist)
+        this.addCommand({
+            id: "new-person",
+            name: "New Person",
+            callback: () => {
+                this.openNewPersonFlow();
+            },
+        });
+
+        // Register Update This Person command (direct update for active file)
+        this.addCommand({
+            id: "update-this-person",
+            name: "Update This Person",
+            callback: () => {
+                const file = this.app.workspace.getActiveViewOfType(MarkdownView)?.file;
+                if (!file) {
+                    new Notice("Current file is not a tracked contact");
+                    return;
+                }
+                const contact = this.index.getContacts().find(
+                    (c) => c.file.path === file.path
+                );
+                if (!contact) {
+                    new Notice("Current file is not a tracked contact");
+                    return;
+                }
+                const contacts = this.index.getContactsByStatus();
+                const modal = new OrbitHubModal(this, contacts);
+                modal.openDirectUpdate(contact);
+            },
+        });
+
         // Orbit loaded successfully
+    }
+
+    /**
+     * Schema-aware "New Person" flow — shared by the command and Hub Add button.
+     *
+     * If multiple schemas exist (built-in + user), shows a picker first.
+     * If only one schema is available, opens the form directly.
+     */
+    openNewPersonFlow(): void {
+        const schemas = this.schemaLoader.getSchemas();
+        if (schemas.length === 0) {
+            new Notice("No schemas available");
+            return;
+        }
+
+        const openForm = (schema: SchemaDef) => {
+            const modal = new OrbitFormModal(
+                this.app,
+                schema,
+                async (data) => {
+                    // Handle photo scraping if requested
+                    if (data._scrapePhoto && data.photo && ImageScraper.isUrl(data.photo)) {
+                        try {
+                            const wikilink = await ImageScraper.scrapeAndSave(
+                                this.app,
+                                data.photo,
+                                data.name || 'Contact',
+                                this.settings.photoAssetFolder
+                            );
+                            data.photo = wikilink;
+                            new Notice('✓ Photo downloaded and saved');
+                        } catch (error) {
+                            Logger.error('Main', 'Photo scrape failed', error);
+                            new Notice('⚠ Photo download failed — keeping original URL');
+                        }
+                    }
+
+                    await createContact(
+                        this.app,
+                        schema,
+                        data,
+                        this.settings
+                    );
+                    await this.index.scanVault();
+                    this.index.trigger("change");
+                },
+                {},
+                this.settings.defaultScrapeEnabled,
+            );
+            modal.open();
+        };
+
+        // Single-schema optimization: skip picker
+        if (schemas.length === 1) {
+            openForm(schemas[0]);
+            return;
+        }
+
+        // Multiple schemas: show picker
+        const picker = new SchemaPickerModal(
+            this.app,
+            schemas,
+            openForm
+        );
+        picker.open();
     }
 
     /**
@@ -138,13 +310,13 @@ export default class OrbitPlugin extends Plugin {
                     : `${contact.daysSinceContact} days ago`;
                 overdue.push(`- 🔴 ${contact.name} (last: ${days})`);
             } else if (contact.lastContact && contact.lastContact >= weekAgo) {
-                const dateStr = contact.lastContact.toISOString().split("T")[0];
+                const dateStr = formatLocalDate(contact.lastContact);
                 contacted.push(`- ✅ ${contact.name} (${dateStr})`);
             }
         }
 
         // Build report
-        const dateStr = today.toISOString().split("T")[0];
+        const dateStr = formatLocalDate(today);
         let report = `# Orbit Weekly Digest\n`;
         report += `**Generated:** ${dateStr}\n\n`;
 
@@ -193,11 +365,18 @@ export default class OrbitPlugin extends Plugin {
 
     async saveSettings() {
         await this.saveData(this.settings);
+        // Update Logger level immediately
+        Logger.setLevel(this.settings.logLevel);
         // Update the index with new settings and re-scan
         await this.index.updateSettings(this.settings);
         // Update link listener settings
         this.linkListener.updateSettings(this.settings);
         this.linkListener.clearCache();
+        // Update schema loader settings and rescan
+        this.schemaLoader.updateSchemaFolder(this.settings.schemaFolder);
+        await this.schemaLoader.rescan();
+        // Refresh AI provider configuration
+        this.aiService.refreshProviders(this.settings);
     }
 
     /**

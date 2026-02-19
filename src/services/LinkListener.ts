@@ -1,6 +1,8 @@
 import { App, TFile, Notice, debounce, MarkdownView } from "obsidian";
 import { OrbitIndex } from "./OrbitIndex";
 import { OrbitSettings } from "../settings";
+import { Logger } from "../utils/logger";
+import { formatLocalDate } from "../utils/dates";
 import { OrbitContact } from "../types";
 
 /**
@@ -66,7 +68,7 @@ export class LinkListener {
      */
     private async checkAndPrompt(linkName: string, sourceFile: TFile): Promise<void> {
         // Skip if we've already prompted for this link in this session
-        const promptKey = `${sourceFile.path}::${linkName}`;
+        const promptKey = `${sourceFile.path}::${linkName} `;
         if (this.processedLinks.has(promptKey)) return;
 
         // Find the contact by matching the link name to file basenames
@@ -123,7 +125,7 @@ export class LinkListener {
         const fragment = document.createDocumentFragment();
 
         const message = document.createElement("span");
-        message.textContent = `Mark "${contact.name}" as contacted today? `;
+        message.textContent = `Mark "${contact.name}" as contacted today ? `;
         fragment.appendChild(message);
 
         const button = document.createElement("button");
@@ -144,7 +146,7 @@ export class LinkListener {
      */
     private async updateContactDate(contact: OrbitContact): Promise<void> {
         const today = new Date();
-        const dateStr = today.toISOString().split("T")[0]; // YYYY-MM-DD
+        const dateStr = formatLocalDate(today); // YYYY-MM-DD
 
         try {
             await this.app.fileManager.processFrontMatter(
@@ -154,9 +156,9 @@ export class LinkListener {
                 }
             );
 
-            new Notice(`✓ Updated "${contact.name}" - last contact: ${dateStr}`);
+            new Notice(`✓ Updated "${contact.name}" - last contact: ${dateStr} `);
         } catch (error) {
-            console.error("Orbit: Failed to update contact", error);
+            Logger.error('LinkListener', 'Failed to update contact', error);
             new Notice(`Failed to update "${contact.name}"`);
         }
     }

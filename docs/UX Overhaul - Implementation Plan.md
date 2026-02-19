@@ -4,7 +4,7 @@ tags:
   - orbit
   - implementation
 created: 2026-02-13
-status: planning
+status: in-progress
 ---
 # Orbit UX Overhaul — Implementation Plan
 
@@ -80,7 +80,7 @@ src/
 ├── modals/
 │   ├── ReactModal.ts                # [NEW] Base modal class — handles createRoot/unmount lifecycle
 │   ├── OrbitFormModal.ts            # [NEW] Generic schema-driven form modal (extends ReactModal)
-│   ├── ContactPickerModal.ts        # [NEW] Card grid picker modal (extends ReactModal)
+│   ├── OrbitHubModal.ts              # [NEW] Centralized contact hub modal (extends ReactModal)
 │   └── AiResultModal.ts            # [NEW] AI message result modal (extends ReactModal)
 ├── services/
 │   ├── OrbitIndex.ts                # Existing (modify: contactsFolder support)
@@ -140,7 +140,7 @@ src/
 
 ---
 
-## Phase 0: Test Infrastructure & Baseline Tests
+## Phase 0: Test Infrastructure & Baseline Tests ✅
 
 **Goal:** Set up vitest with Obsidian API mocks and write baseline tests for the most important existing code.
 
@@ -219,7 +219,7 @@ export class TFile {
 
 ---
 
-## Phase 1: Schema System & Form Modal Foundation
+## Phase 1: Schema System & Form Modal Foundation ✅
 
 **Goal:** Build the core infrastructure that all subsequent modals depend on, including the `ReactModal` base class.
 
@@ -371,7 +371,7 @@ interface SchemaDef {
 
 ---
 
-## Phase 1.5: Schema & Form Modal Tests
+## Phase 1.5: Schema & Form Modal Tests ✅
 
 **Goal:** ≥80% unit + integration coverage on Phase 1 code.
 
@@ -399,7 +399,7 @@ interface SchemaDef {
 
 ---
 
-## Phase 2: ContactManager Service & New Person Modal
+## Phase 2: ContactManager Service & New Person Modal ✅
 
 **Goal:** Ship the "New Person" workflow — the highest-value friction removal.
 
@@ -478,7 +478,7 @@ interface SchemaDef {
 
 ---
 
-## Phase 2.5: ContactManager & New Person Tests
+## Phase 2.5: ContactManager & New Person Tests ✅
 
 **Goal:** ≥80% unit + integration coverage on Phase 2 code.
 
@@ -499,12 +499,12 @@ interface SchemaDef {
 
 ---
 
-## Phase 3: Contact Picker Modal
+## Phase 3: Contact Picker Modal ✅
 
 **Goal:** Build the reusable card-grid picker that the Update, Edit, and AI flows all share.
 
 ### Deliverables
-- `modals/ContactPickerModal.ts` — Modal shell with card grid (extends `ReactModal`)
+- `modals/ContactPickerModal.ts` — Modal shell with card grid (extends `ReactModal`) *(deleted in Phase 4, replaced by `OrbitHubModal.ts`)*
 - `components/ContactPickerGrid.tsx` — Card grid for modal context (uses `ContactCard`)
 - Grid sorted by status: decay → wobble → stable → snoozed
 - Optional filter: "Show decaying only" toggle
@@ -544,7 +544,7 @@ For the picker context, we need to:
 
 | File | Action |
 |------|--------|
-| `src/modals/ContactPickerModal.ts` | **NEW** — Picker modal shell (extends `ReactModal`) |
+| `src/modals/ContactPickerModal.ts` | **NEW** — Picker modal shell (extends `ReactModal`) *(deleted in Phase 4, replaced by `OrbitHubModal.ts`)* |
 | `src/components/ContactPickerGrid.tsx` | **NEW** — Grid layout for picker |
 | `src/components/ContactCard.tsx` | **MODIFY** — Add `mode` prop to toggle sidebar vs picker behavior |
 | `styles.css` | **MODIFY** — Picker modal styles, search bar |
@@ -558,7 +558,7 @@ For the picker context, we need to:
 
 ---
 
-## Phase 3.5: Contact Picker Tests
+## Phase 3.5: Contact Picker Tests ✅
 
 **Goal:** ≥80% unit + integration coverage on Phase 3 code.
 
@@ -578,17 +578,22 @@ For the picker context, we need to:
 
 ---
 
-## Phase 4: Update Contacts Flow
+## Phase 4: Update Contacts Flow ✅
 
-**Goal:** Wire the contact picker to an inline update panel. This replaces QuickAdd for contact updates.
+**Goal:** Build a centralized Orbit Hub modal for contact management. Replaces QuickAdd for contact updates.
 
 ### Deliverables
 - `components/UpdatePanel.tsx` — Inline form for logging a contact touchpoint
-- `modals/ContactPickerModal.ts` — Extended with two-panel layout: grid ↔ update panel
+- `modals/OrbitHubModal.ts` — **NEW** centralized hub modal replacing `ContactPickerModal` with two-panel layout: grid ↔ update panel
+- Action bar: Update, Add (opens New Person), Digest (runs weekly digest), Done (closes modal)
+- Disabled placeholders: Edit (Phase 5), Suggest Message (Phase 8)
+- Selected card highlight with accent border
 - Batch mode: after saving an update, modal returns to the card grid (not closed)
-- "Done" button to close the modal when finished updating
-- Command: `update-contacts` (displayed as "Orbit: Update Contacts") in command palette + ribbon
-- Remove temporary `debug-picker` command from Phase 3
+- `settings.ts` — New `interactionLogHeading` setting: configurable heading text for interaction log injection (supports emoji headings like `## 📝 Interaction Log`)
+- `ContactManager.ts` — `appendToInteractionLog()` updated with `heading` parameter using `includes()` matching
+- Command: `update-contacts` (displayed as "Orbit: Update Contacts") in command palette
+- Removed temporary `debug-picker` command from Phase 3
+- **Deleted** `ContactPickerModal.ts` — replaced entirely by `OrbitHubModal.ts`
 
 ### Update Panel Fields
 
@@ -600,24 +605,31 @@ For the picker context, we need to:
 
 ### Update Flow
 1. User runs "Update Contacts" command
-2. `ContactPickerModal` opens with full card grid (sorted by decay)
-3. User clicks a card → grid slides/transitions to `UpdatePanel` for that contact
-4. `UpdatePanel` shows contact info at top (name, photo, current status) + update fields
-5. User fills in and clicks "Save"
-6. `ContactManager.updateFrontmatter()` sets `last_contact` and `last_interaction`
-7. `ContactManager.appendToInteractionLog()` adds timestamped note (if provided) via `vault.process()`
-8. Modal transitions back to the card grid
-9. Updated contact's card refreshes to show new status
-10. User can update more contacts or click "Done" to close
+2. `OrbitHubModal` opens with full card grid (sorted by decay)
+3. User clicks a card → card highlights with accent border (selected state)
+4. User clicks "🔄 Update" → modal transitions to `UpdatePanel` for that contact
+5. `UpdatePanel` shows contact info at top (name, photo/initials, status badge) + update fields
+6. User fills in and clicks "Save"
+7. `ContactManager.updateFrontmatter()` sets `last_contact` and `last_interaction`
+8. `ContactManager.appendToInteractionLog()` appends timestamped note (if provided) via `vault.process()` — uses configurable `interactionLogHeading` setting
+9. Modal transitions back to the card grid
+10. Updated contact's card refreshes to show new status
+11. User can update more contacts, use other action buttons, or click "Done" to close
 
 ### Files to Create/Modify
 
 | File | Action |
 |------|--------|
 | `src/components/UpdatePanel.tsx` | **NEW** — Inline update form |
-| `src/modals/ContactPickerModal.ts` | **MODIFY** — Add two-panel routing (grid ↔ update) |
-| `src/main.ts` | **MODIFY** — Register `update-contacts` command |
-| `styles.css` | **MODIFY** — Update panel styles, transition between panels |
+| `src/modals/OrbitHubModal.ts` | **NEW** — Centralized hub modal with two-panel routing (grid ↔ update) |
+| `src/modals/ContactPickerModal.ts` | **DELETED** — Replaced by `OrbitHubModal` |
+| `src/components/ContactCard.tsx` | **MODIFY** — Added `selected` prop + CSS class |
+| `src/components/ContactPickerGrid.tsx` | **MODIFY** — Added `selectedContact` state |
+| `src/modals/ReactModal.ts` | **MODIFY** — `root` changed to `protected` for subclass access |
+| `src/settings.ts` | **MODIFY** — Added `interactionLogHeading` setting |
+| `src/services/ContactManager.ts` | **MODIFY** — `heading` parameter in `appendToInteractionLog` |
+| `src/main.ts` | **MODIFY** — Register `update-contacts` command, remove `debug-picker` |
+| `styles.css` | **MODIFY** — Hub layout, selected card, action bar, update panel styles |
 
 ### Verification
 - Build succeeds
@@ -632,26 +644,26 @@ For the picker context, we need to:
 
 ---
 
-## Phase 4.5: Update Contacts Tests
+## Phase 4.5: Update Contacts Tests ✅
 
 **Goal:** ≥80% unit + integration coverage on Phase 4 code.
 
 ### Test Files
 
-| File | Type | Covers |
-|------|------|--------|
-| `test/unit/components/update-panel.test.ts` | Unit | Renders contact info, date defaults to today, interaction type dropdown, note textarea, submit callback, cancel/back button |
-| `test/unit/modals/contact-picker-update.test.ts` | Unit | Two-panel routing — grid state vs update state, transitions between panels, Done button closes modal |
-| `test/integration/update-flow.test.ts` | Integration | Full flow: open picker → select contact → fill update panel → save → verify frontmatter updated + interaction log appended → verify returns to grid |
+| File | Tests | Covers |
+|------|-------|--------|
+| `test/unit/components/update-panel.test.tsx` | 17 | Rendering (name, status, photo/initials, form fields), interactions (date, dropdown, note, save, cancel), status variants |
+| `test/unit/modals/orbit-hub-modal.test.ts` | 9 | Lifecycle, React root management, CSS class, render content, OrbitProvider wrapping |
+| `test/unit/services/contact-manager.test.ts` | +3 | Emoji heading match, custom heading, heading creation with `appendToInteractionLog` |
 
 ### Coverage Targets
 - `components/UpdatePanel.tsx`: ≥80% lines + branches
-- `modals/ContactPickerModal.ts` (update extensions): maintains ≥80%
-- `services/ContactManager.ts` (updateFrontmatter, appendToInteractionLog): maintains ≥80%
+- `modals/OrbitHubModal.ts`: ≥80% lines + branches
+- `services/ContactManager.ts` (appendToInteractionLog heading param): maintains ≥80%
 
 ---
 
-## Phase 5: Edit Person & Update This Person
+## Phase 5: Edit Person & Update This Person ✅
 
 **Goal:** Ship the remaining two contact management commands.
 
@@ -662,7 +674,7 @@ For the picker context, we need to:
 - Reuses `OrbitFormModal` — opens with existing frontmatter values pre-filled
 - On submit: uses `updateFrontmatter()` to **merge** changes back (only touches schema-defined fields, preserves all other frontmatter keys like `nickname`, `custom_field`, etc.)
 - If a frontmatter value doesn't match a dropdown option (e.g., someone manually typed `frequency: Every Other Day`), display the raw value as-is in the field
-- Flow: Command palette → `ContactPickerModal` (select who to edit) → `OrbitFormModal` (pre-filled)
+- Flow: Command palette → `OrbitHubModal` (select contact + click Edit) → `OrbitFormModal` (pre-filled)
 - Command: `edit-person` (displayed as "Orbit: Edit Person")
 
 > [!IMPORTANT]
@@ -684,7 +696,7 @@ For the picker context, we need to:
 |------|--------|
 | `src/schemas/edit-person.schema.ts` | **NEW** — Edit Person schema |
 | `src/modals/OrbitFormModal.ts` | **MODIFY** — Support pre-populating fields from existing data |
-| `src/modals/ContactPickerModal.ts` | **MODIFY** — Support "edit" callback mode |
+| `src/modals/OrbitHubModal.ts` | **MODIFY** — Wire Edit button to open `OrbitFormModal` with pre-filled data |
 | `src/main.ts` | **MODIFY** — Register both commands |
 
 ### Verification
@@ -697,7 +709,7 @@ For the picker context, we need to:
 
 ---
 
-## Phase 5.5: Edit & Update This Person Tests
+## Phase 5.5: Edit & Update This Person Tests ✅
 
 **Goal:** ≥80% unit + integration coverage on Phase 5 code.
 
@@ -717,83 +729,112 @@ For the picker context, we need to:
 
 ---
 
-## Phase 6: User Schema System
+## Phase 6: User Schema System ✅
 
 **Goal:** Allow users to create their own schemas as Markdown files in the vault.
 
 ### Deliverables
 - `schemas/loader.ts` — Schema loader that reads both TypeScript (built-in) and Markdown (user) schemas
-- Markdown schema parser: reads YAML frontmatter for field definitions, body as output template
-- Schema validation: helpful error notices for malformed schemas
+- Hybrid schema format: flat frontmatter for simple fields, optional `fields` code block for advanced types
+- Silent skip: files without `schema_id` are ignored (no notices), allowing non-schema files to coexist in the folder
+- Schema validation: helpful error notices only for files that have `schema_id` but are missing `schema_title`
 - Schema registry: merged list of built-in + user schemas
-- Settings: configurable schema folder path (default: `System/Orbit/Schemas/`) — use `setHeading()` for section
-- "Generate Example Schema" button in settings — creates a template markdown file with all field types
-- Command: `new-contact-from-schema` (displayed as "Orbit: New Contact from Schema") — opens a picker to select which schema, then the form
-  - **Single-schema optimization**: If only one schema is available (built-in or user), skip the picker and open the form directly
+- Settings: configurable schema folder path — use `setHeading()` for section, `FolderSuggest` for autocomplete
+- "Generate Example Schema" button in settings — creates a flat-frontmatter example file
+- Command: `new-contact-from-schema` (displayed as "Orbit: New contact from schema") — opens a picker to select which schema, then the form
+  - **Single-schema optimization**: If only one schema is available, skip the picker and open the form directly
+- `ContactManager` uses `schema.output.path` for file placement with `{{placeholder}}` substitution
 
-### User Schema Format
+### User Schema Format (Hybrid)
 
 > [!NOTE]
-> Simplified format vs. original plan — field definitions live directly in YAML frontmatter (one parsing layer). The markdown body serves as the output template. This is more Obsidian-native and easier for users to debug.
+> Hybrid format — flat frontmatter keys for simple fields (most users), optional `fields` code block for advanced field types. Non-reserved frontmatter keys become text fields automatically. Files without `schema_id` in frontmatter are silently skipped.
+
+**Simple mode** (flat frontmatter — no code needed):
 
 ```markdown
 ---
 schema_id: conference-contact
-schema_title: Add Conference Contact
-cssClass: orbit-conference
+schema_title: Conference Contact
 submit_label: Create Contact
 output_path: "People/Professional/{{name}}.md"
-fields:
-  - key: name
-    type: text
-    label: Name
-    required: true
-  - key: company
-    type: text
-    label: Company
-  - key: frequency
-    type: dropdown
-    label: Check-in Frequency
-    options: [Weekly, Monthly, Quarterly]
-    default: Monthly
+name:
+company:
+frequency: Monthly
+birthday:
+notes:
 ---
 # {{name}}
 
 > Company: {{company}}
 
 ## Notes
-- 
+-
 ```
 
-### Schema Loader Logic
-1. On plugin load, scan configured schema folder using `vault.getFolderByPath(schemaFolder)` → iterate `.children` (not `getMarkdownFiles()`)
-2. Parse each file's YAML frontmatter into a `SchemaDef`
-3. Validate field definitions (known types, required fields present, etc.)
-4. Merge with built-in schemas into a unified registry
-5. Re-scan when settings change or files in schema folder change
-6. All paths processed through `normalizePath()`
+**Advanced mode** (optional `fields` code block overrides flat fields):
 
-### Files to Create/Modify
+````markdown
+---
+schema_id: conference-contact
+schema_title: Conference Contact
+output_path: "People/Professional/{{name}}.md"
+name:
+company:
+frequency: Monthly
+---
+
+```fields
+- key: frequency
+  type: dropdown
+  label: Check-in frequency
+  options: [Weekly, Monthly, Quarterly, Yearly]
+  default: Monthly
+```
+
+# {{name}}
+````
+
+**Reserved frontmatter keys** (metadata, not form fields): `schema_id`, `schema_title`, `output_path`, `submit_label`, `cssClass`
+
+**Merge rules:**
+1. All non-reserved frontmatter keys → simple text fields (label auto-generated from key)
+2. `fields` code block (if present) → advanced fields that override flat ones by matching key
+3. Body after the code block → output template (`bodyTemplate`)
+
+### Schema Loader Logic
+1. On plugin load, scan configured schema folder using `vault.getFolderByPath(schemaFolder)` → iterate `.children`
+2. Skip files without `schema_id` (silent — no error notices)
+3. Parse flat frontmatter keys into text fields, extract optional `fields` code block for advanced overrides
+4. Merge flat + advanced fields, extract body template
+5. Merge with built-in schemas into a unified registry (built-in IDs take precedence)
+6. Re-scan when settings change
+7. All paths processed through `normalizePath()`
+
+### Files Created/Modified
 
 | File | Action |
 |------|--------|
-| `src/schemas/loader.ts` | **NEW** — Dual-format schema loader + validator (uses `getFolderByPath()`) |
-| `src/settings.ts` | **MODIFY** — Add schema folder path (use `setHeading()`), "Generate Example" button |
-| `src/main.ts` | **MODIFY** — Register `new-contact-from-schema` command, initialize loader |
-| `styles.css` | **MODIFY** — Styles for schema picker (if needed) |
+| `src/schemas/loader.ts` | **NEW** — Hybrid schema loader + validator |
+| `src/schemas/types.ts` | **MODIFY** — Added `bodyTemplate?: string` to `SchemaDef` |
+| `src/settings.ts` | **MODIFY** — Added schema folder setting, Generate Example button |
+| `src/main.ts` | **MODIFY** — SchemaLoader init, SchemaPickerModal, `new-contact-from-schema` command |
+| `src/services/ContactManager.ts` | **MODIFY** — `schema.output.path` support, `bodyTemplate` support |
+| `test/mocks/obsidian.ts` | **MODIFY** — FuzzySuggestModal mock, polyfillEl with createEl/createDiv |
+| `test/helpers/factories.ts` | **MODIFY** — Added `schemaFolder` to settings factory |
 
 ### Verification
 - Build succeeds
 - Place a test schema `.md` in the configured folder → it appears in the schema picker
-- Creating a contact from a user schema produces correctly formatted output
-- Malformed YAML shows a helpful error notice (not a crash)
-- "Generate Example Schema" creates a working template file
+- Creating a contact from a user schema produces correctly formatted output at the schema's `output_path`
+- Non-schema files (person templates, etc.) in the schema folder are silently ignored
+- "Generate Example Schema" creates a working flat-frontmatter template file
 - Built-in schemas still work alongside user schemas
 - Schema loader uses `getFolderByPath()` (not full vault scan)
 
 ---
 
-## Phase 6.5: User Schema System Tests
+## Phase 6.5: User Schema System Tests ✅
 
 **Goal:** ≥80% unit + integration coverage on Phase 6 code.
 
@@ -811,7 +852,7 @@ fields:
 
 ---
 
-## Phase 7: AI Provider Architecture
+## Phase 7: AI Provider Architecture ✅
 
 **Goal:** Build the AI provider abstraction layer and settings UI. No user-facing AI feature yet — just the plumbing.
 
@@ -875,7 +916,7 @@ interface AiProvider {
 
 ---
 
-## Phase 7.5: AI Provider Tests
+## Phase 7.5: AI Provider Tests ✅
 
 **Goal:** ≥80% unit + integration coverage on Phase 7 code.
 
@@ -896,7 +937,7 @@ interface AiProvider {
 
 ---
 
-## Phase 8: AI Message Suggest Feature
+## Phase 8: AI Message Suggest Feature ✅
 
 **Goal:** Ship the complete AI message suggestion flow.
 
@@ -913,7 +954,7 @@ interface AiProvider {
 
 ### Flow
 1. User runs "Orbit: Suggest Message"
-2. `ContactPickerModal` opens (decay-first sorting)
+2. `OrbitHubModal` opens (decay-first sorting, user selects contact + clicks Suggest Message)
 3. User selects a contact
 4. Plugin reads contact's full `.md` file content
 5. Extracts structured context (fuel, small talk, last interaction, etc.)
@@ -961,7 +1002,7 @@ interface MessageContext {
 
 ---
 
-## Phase 8.5: AI Message Suggest Tests
+## Phase 8.5: AI Message Suggest Tests ✅
 
 **Goal:** ≥80% unit + integration coverage on Phase 8 code.
 
@@ -982,7 +1023,7 @@ interface MessageContext {
 
 ---
 
-## Phase 9: Debug Logging System
+## Phase 9: Debug Logging System ✅
 
 **Goal:** Create a gated, centralized logging system controlled by settings toggles.
 
@@ -1074,7 +1115,7 @@ export class Logger {
 
 ---
 
-## Phase 9.5: Debug Logging Tests
+## Phase 9.5: Debug Logging Tests ✅
 
 **Goal:** ≥80% unit + integration coverage on Phase 9 code.
 
@@ -1155,6 +1196,96 @@ export class Logger {
 
 ---
 
+## Phase 11a: Image Scraping — Photo Field, Settings & Pipeline
+
+**Goal:** Download contact photos from URLs and store them locally in the vault, preventing broken images from expired CDN links. Update the photo field UX to accept all photo formats.
+
+### Design Decisions
+
+| Decision | Choice | Rationale |
+|----------|--------|-----------||
+| Storage format | Wikilink `[[Name - Photo.jpg]]` | Obsidian-native, portable, already supported by ContactCard |
+| Naming convention | `{sanitizedName} - Photo.{ext}` | Human-readable, easy to wikilink |
+| Conflict handling | Append number (`Photo-2.jpg`) | Preserve history |
+| Extension fallback | `.webp` | Most common modern web format |
+| HTTP client | `requestUrl()` | Required by Obsidian plugin guidelines |
+| Photo preview | Universal (URL, vault path, wikilink) | Better UX across all photo types |
+
+### Deliverables
+- Updated photo field UX: `type="text"` input (was `type="url"`), placeholder/description updated to mention URL, local path, and wikilink
+- Universal photo preview in `FormRenderer.tsx` — resolves URLs, vault paths, and wikilinks for live preview
+- Conditional "Download and save to vault" toggle — shown only when value is a URL
+- New **Photos** settings section: `photoAssetFolder` (FolderSuggest), `defaultScrapeEnabled` (toggle)
+- `src/utils/ImageScraper.ts` — Stateless utility: `requestUrl()` download, Content-Type/URL/`.webp` extension detection, `vault.createBinary()` save, conflict numbering, wikilink return
+- `ensureFolderExists()` extracted from `ContactManager.ts` to `utils/paths.ts` (shared utility)
+- Scrape pipeline wired into `ContactManager.createContact()` and `OrbitHubModal.handleEdit()`
+
+### Files to Create/Modify
+
+| File | Action |
+|------|--------|
+| `src/schemas/new-person.schema.ts` | **MODIFY** — Photo field placeholder + description |
+| `src/schemas/edit-person.schema.ts` | **MODIFY** — Photo field placeholder + description |
+| `src/components/FormRenderer.tsx` | **MODIFY** — `type="text"`, universal preview, scrape toggle |
+| `src/settings.ts` | **MODIFY** — `photoAssetFolder`, `defaultScrapeEnabled`, Photos section |
+| `src/utils/ImageScraper.ts` | **NEW** — Image download + save pipeline |
+| `src/utils/paths.ts` | **MODIFY** — Add `ensureFolderExists()` from ContactManager |
+| `src/services/ContactManager.ts` | **MODIFY** — Import `ensureFolderExists` from paths, wire scrape on create |
+| `src/modals/OrbitHubModal.ts` | **MODIFY** — Wire scrape on edit |
+| `test/helpers/factories.ts` | **MODIFY** — Add new settings defaults |
+
+### Verification
+- Build succeeds
+- "New Person" modal shows updated photo field with text input, universal preview, and scrape toggle
+- Entering a URL shows scrape toggle; entering a vault path or wikilink does not
+- Submitting with scrape enabled downloads the image, saves to asset folder, and stores wikilink in frontmatter
+- Edit Person modal has the same scrape functionality
+- Non-URL photos preview correctly in the form
+- Settings persist correctly
+
+---
+
+## Phase 11b: Reactive Scrape on Existing Files & Tests
+
+**Goal:** Detect when a URL is added to an existing contact's `photo` frontmatter field and offer to download it. Write comprehensive tests for both Phase 11a and 11b.
+
+### Deliverables
+- `photoScrapeOnEdit` dropdown setting: Ask every time (default), Always download, Never download
+- Photo change detection in `OrbitIndex.handleFileChange()` — compares old vs new photo values
+- `ScrapeConfirmModal.ts` — Simple confirmation dialog ("Download this photo and save locally?")
+- Re-entrancy guard (`recentlyScraping: Set<string>`) — prevents infinite loop when scrape updates frontmatter
+- Event-driven: OrbitIndex emits `'photo-scrape-prompt'`, `main.ts` listens and opens dialog
+
+### Test Files
+
+| File | Type | Covers |
+|------|------|--------|
+| `test/unit/utils/image-scraper.test.ts` | Unit | `scrapeAndSave()`, extension detection, conflict numbering, wikilink return |
+| `test/unit/components/form-renderer-photo.test.tsx` | Unit | Updated photo field: text input, universal preview, scrape toggle |
+| `test/unit/settings/photo-settings.test.ts` | Unit | Photos section, FolderSuggest, defaults, scrapeOnEdit dropdown |
+| `test/integration/photo-scrape-flow.test.ts` | Integration | Full flow: URL → toggle → submit → scrape → wikilink in frontmatter |
+| `test/unit/services/orbit-index-scrape.test.ts` | Unit | Photo change detection, re-entrancy guard, event emission |
+
+### Files to Create/Modify
+
+| File | Action |
+|------|--------|
+| `src/settings.ts` | **MODIFY** — `photoScrapeOnEdit` setting + dropdown |
+| `src/services/OrbitIndex.ts` | **MODIFY** — Photo change detection + re-entrancy guard |
+| `src/modals/ScrapeConfirmModal.ts` | **NEW** — Simple confirmation dialog |
+| `src/main.ts` | **MODIFY** — Listen for scrape prompt event |
+| Test files (5) | **NEW/MODIFY** — See test table above |
+
+### Verification
+- Build succeeds
+- All tests pass with ≥80% coverage on new files
+- Editing a person file's `photo` frontmatter to a URL triggers the dialog (Ask mode)
+- Always mode auto-scrapes without dialog
+- Never mode ignores URL changes
+- Re-entrancy guard prevents infinite loop
+
+---
+
 ## Phase Summary
 
 | Phase | Focus | Key Deliverables | Est. Complexity |
@@ -1179,6 +1310,8 @@ export class Logger {
 | 9 | Debug Logging | Settings toggle for Logger (created in Phase 1), existing code cleanup | Low |
 | 9.5 | Logging Tests | Unit + integration tests for Phase 9 | Low |
 | 10 | Polish & Integration | Ribbon menu, manifest, versions.json, legacy fixes, docs | Medium |
+| 11a | Image Scraping | Photo field UX, ImageScraper utility, settings, form integration | Medium |
+| 11b | Reactive Scrape + Tests | Photo change detection, confirmation dialog, all Phase 11 tests | Medium |
 
 ---
 
@@ -1213,9 +1346,11 @@ graph TD
     P6 --> P10
     P8 --> P10
     P9 --> P10
+    P10 --> P11a["Phase 11a: Image Scraping"]
+    P11a --> P11b["Phase 11b: Reactive Scrape + Tests"]
 ```
 
-> **Note:** Phases 1-5 (modal system) and Phases 7-8 (AI) are two independent tracks that can be developed in parallel. Phase 7 has no dependency on Phases 3-5 and can start after Phase 0. Phase 6 (user schemas) depends on Phase 2. Phase 9 (debug logging settings + cleanup) depends on Phase 1 where `Logger` was created — it can be done any time after Phase 1. Phase 10 depends on everything. Each X.5 testing phase must be completed before moving to the next implementation phase.
+> **Note:** Phases 1-5 (modal system) and Phases 7-8 (AI) are two independent tracks that can be developed in parallel. Phase 7 has no dependency on Phases 3-5 and can start after Phase 0. Phase 6 (user schemas) depends on Phase 2. Phase 9 (debug logging settings + cleanup) depends on Phase 1 where `Logger` was created — it can be done any time after Phase 1. Phase 10 depends on everything. Phase 11 (image scraping) depends on Phase 10. Each X.5 testing phase must be completed before moving to the next implementation phase.
 
 ---
 
@@ -1251,4 +1386,17 @@ npm run test -- --watch     # Watch mode during development
 
 ---
 
-*Created: 2026-02-13 | Updated: 2026-02-14 | Status: Planning | Version: v0.9.0 | Author: Agent*
+## Ideas Along the Way
+
+Feature ideas captured during implementation for future consideration.
+
+### Auto-Scrape Contact Photos ✅ (Implemented as Phase 11)
+**Origin:** Phase 3 session — manual photo management is tedious with expiring CDN URLs.
+
+**Implemented:** Phase 11a (scrape on new contact creation) + Phase 11b (reactive scrape on existing files) + Phase 11.5 (55 tests).
+
+See `src/utils/ImageScraper.ts`, `src/modals/ScrapeConfirmModal.ts`, and the `photoScrapeEnabled`/`photoScrapeOnEdit`/`photoAssetFolder` settings.
+
+---
+
+*Created: 2026-02-13 | Updated: 2026-02-19 | Status: In Progress | Version: v0.9.0 | Author: Agent*

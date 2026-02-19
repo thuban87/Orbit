@@ -14,7 +14,7 @@ interface OrbitContextValue {
 const OrbitContext = createContext<OrbitContextValue | null>(null);
 
 /**
- * Hook to access Orbit context.
+ * Hook to access Orbit context. Throws if used outside OrbitProvider.
  */
 export function useOrbit(): OrbitContextValue {
     const context = useContext(OrbitContext);
@@ -22,6 +22,15 @@ export function useOrbit(): OrbitContextValue {
         throw new Error("useOrbit must be used within an OrbitProvider");
     }
     return context;
+}
+
+/**
+ * Hook to optionally access Orbit context.
+ * Returns null when used outside an OrbitProvider (e.g. picker modal).
+ * Always calls useContext (satisfies React Rules of Hooks).
+ */
+export function useOrbitOptional(): OrbitContextValue | null {
+    return useContext(OrbitContext);
 }
 
 /**

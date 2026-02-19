@@ -7,8 +7,8 @@ tags:
 ---
 # Orbit - Feature Priority List
 
-**Last Updated:** January 9, 2026
-**Version:** 0.0.0 (Pre-Development)
+**Last Updated:** February 19, 2026
+**Version:** 0.9.0
 
 ---
 
@@ -118,3 +118,35 @@ tags:
 *   **Phase 5:** ~3 hours
 *   **Phase 6:** ~11 hours
 *   **Total:** ~44 hours
+
+---
+
+## UX Overhaul Project
+
+> **Started:** 2026-02-14
+> **Full Details:** [[UX Overhaul - Implementation Plan]]
+> **Session Log:** [[UX Overhaul Session Log]]
+
+- [x] Phase 0 — Test Infrastructure & Baseline Tests
+- [x] Phase 1 — Schema System & Form Modal Foundation
+- [x] Phase 1.5 — Schema & Form Modal Tests
+- [x] Phase 2 — ContactManager Service & New Person Modal (273 tests total)
+- [x] Phase 2.5 — ContactManager & New Person Tests (+54 tests)
+- [x] Phase 3 — Contact Picker Modal (313 tests total)
+- [x] Phase 3.5 — Contact Picker Tests (+40 tests)
+- [x] Phase 4 — Update Contacts Flow (Orbit Hub, UpdatePanel, interactionLogHeading setting)
+- [x] Phase 4.5 — Update Contacts Tests (+20 tests, 333 total)
+- [x] Phase 5 — Edit Person & Update This Person (+37 tests, 370 total)
+- [x] Phase 5.5 — Edit & Update This Person Tests
+- [x] Phase 6 — User Schema System (+32 tests, 402 total)
+- [x] Phase 6.5 — User Schema System Tests
+- [x] Phase 7 — AI Provider Architecture (AiService + 5 providers + settings UI)
+- [x] Phase 7.5 — AI Provider Tests (+100 tests, 502 total)
+- [x] Phase 8 — AI Message Suggest Feature (AiResultModal, AiResult component, context extraction, dynamic placeholders)
+- [x] Phase 8.5 — AI Message Suggest Tests (+71 tests, 566 total)
+- [x] Phase 9 — Debug Logging System (settings-controlled Logger, replace all console calls)
+- [x] Phase 9.5 — Debug Logging Tests (+19 tests, 585 total)
+- [x] Phase 10 — Polish, Integration & Final Settings (legacy fixes, ribbon Hub, manifest v0.9.0, BRAT prep)
+- [x] Phase 11 — Image Scraping (ImageScraper, photo settings, scrape-on-create, reactive scrape, ScrapeConfirmModal)
+- [x] Phase 11.5 — Image Scraping Tests (+55 tests, 640 total)
+- [x] Post-Overhaul Bug Fixes — File placement, command consolidation, empty fields, AI debug logging
