@@ -1,8 +1,9 @@
 /**
  * Unit tests for src/utils/paths.ts
  */
-import { describe, it, expect } from 'vitest';
-import { sanitizeFileName, buildContactPath } from '../../../src/utils/paths';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { sanitizeFileName, buildContactPath, ensureFolderExists } from '../../../src/utils/paths';
+import { createMockApp, TFolder } from '../../mocks/obsidian';
 
 describe('sanitizeFileName', () => {
     it('returns unchanged name when no invalid chars', () => {
@@ -79,5 +80,49 @@ describe('buildContactPath', () => {
 
     it('handles empty folder', () => {
         expect(buildContactPath('', 'Alice')).toBe('/Alice.md');
+    });
+});
+
+// ═══════════════════════════════════════════════════════════════
+// ensureFolderExists — Branch gap closers
+// ═══════════════════════════════════════════════════════════════
+
+describe('ensureFolderExists', () => {
+    let app: any;
+
+    beforeEach(() => {
+        app = createMockApp();
+        vi.clearAllMocks();
+    });
+
+    it('returns early without calling getFolderByPath when path is empty', async () => {
+        // Covers the empty normalized path guard at paths.ts line 41
+        // normalizePath("") returns "" which is falsy → early return
+        await ensureFolderExists(app, '');
+        expect(app.vault.getFolderByPath).not.toHaveBeenCalled();
+        expect(app.vault.createFolder).not.toHaveBeenCalled();
+    });
+
+    it('skips createFolder when intermediate folders already exist', async () => {
+        // Covers the `if (folder)` truthy branch at paths.ts line 52
+        // Mock getFolderByPath to return null for the full path (so we enter the loop),
+        // but return a truthy value for each intermediate segment
+        app.vault.getFolderByPath
+            .mockReturnValueOnce(null)         // full "a/b/c" check — not found
+            .mockReturnValueOnce(new TFolder('a'))      // segment "a" — exists
+            .mockReturnValueOnce(new TFolder('a/b'))    // segment "a/b" — exists
+            .mockReturnValueOnce(new TFolder('a/b/c')); // segment "a/b/c" — exists
+
+        await ensureFolderExists(app, 'a/b/c');
+        expect(app.vault.createFolder).not.toHaveBeenCalled();
+    });
+
+    it('swallows createFolder errors silently', async () => {
+        // Covers the catch block at paths.ts line 55
+        app.vault.getFolderByPath.mockReturnValue(null); // nothing exists
+        app.vault.createFolder.mockRejectedValue(new Error('Folder already exists'));
+
+        // Should not throw — error is silently swallowed
+        await expect(ensureFolderExists(app, 'a/b')).resolves.toBeUndefined();
     });
 });
