@@ -355,4 +355,51 @@ name:
         const result = await loader.generateExampleSchema();
         expect(result).toBeNull();
     });
+
+    // ── Branch Gap Closers (Wave 0) ─────────────────────────────
+
+    it('parseSchemaFile returns null when all keys are reserved (zero fields)', () => {
+        // Covers the zero-fields skip at loader.ts lines 295-297
+        // All non-reserved keys are absent, so fields array is empty
+        const content = `---
+schema_id: empty-fields
+schema_title: No Fields Schema
+output_path: "People/{{name}}.md"
+---
+# Template
+`;
+        const loader = new SchemaLoader(app, '');
+        const result = loader.parseSchemaFile(content, 'empty-fields');
+
+        expect(result).toBeNull();
+    });
+
+    it('generateExampleSchema proceeds when createFolder throws', async () => {
+        // Covers the catch block at loader.ts lines 354-356
+        // Simulates a race condition where createFolder throws
+        const createdFile = new TFile('Schemas/Example Schema.md');
+        app.vault.getFolderByPath.mockReturnValue(null);
+        app.vault.getAbstractFileByPath.mockReturnValue(null);
+        app.vault.createFolder.mockRejectedValue(new Error('Folder already exists'));
+        app.vault.create.mockResolvedValue(createdFile);
+
+        const loader = new SchemaLoader(app, 'Schemas');
+        const result = await loader.generateExampleSchema();
+
+        expect(result).toBe(createdFile);
+        expect(app.vault.create).toHaveBeenCalled();
+    });
+
+    it('generateExampleSchema returns existing file without creating', async () => {
+        // Covers the already-exists branch at loader.ts lines 362-365
+        const existingFile = new TFile('Schemas/Example Schema.md');
+        app.vault.getFolderByPath.mockReturnValue(new TFolder('Schemas'));
+        app.vault.getAbstractFileByPath.mockReturnValue(existingFile);
+
+        const loader = new SchemaLoader(app, 'Schemas');
+        const result = await loader.generateExampleSchema();
+
+        expect(result).toBe(existingFile);
+        expect(app.vault.create).not.toHaveBeenCalled();
+    });
 });

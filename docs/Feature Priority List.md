@@ -150,3 +150,18 @@ tags:
 - [x] Phase 11 — Image Scraping (ImageScraper, photo settings, scrape-on-create, reactive scrape, ScrapeConfirmModal)
 - [x] Phase 11.5 — Image Scraping Tests (+55 tests, 640 total)
 - [x] Post-Overhaul Bug Fixes — File placement, command consolidation, empty fields, AI debug logging
+
+---
+
+## Testing Overhaul
+
+> **Started:** 2026-02-19
+> **Full Details:** [[Testing Overhaul Plan]]
+> **Session Log:** [[Testing Overhaul Session Log]]
+
+- [x] Wave 0 — Quick Wins: branch gap closers for types.ts, paths.ts, loader.ts (+7 tests, 647 total)
+- [x] Wave 1 — Plugin Lifecycle: main.ts (+40 tests, 687 total)
+- [x] Wave 2 — Components: FuelTooltip, ContactGrid, BirthdayBanner, OrbitHeader, ContactCard, FormRenderer (+64 tests, 751 total)
+- [x] Wave 3 — Views + Context: OrbitView, OrbitDashboard, OrbitContext (+18 tests, 769 total)
+- [x] Wave 4 — Modals: AiResultModal, SchemaPickerModal, ScrapeConfirmModal, OrbitHubModal (+46 tests, 815 total)
+- [x] Wave 5 — Settings tab: display(), photo settings, AI branches, migration (+18 tests, 833 total)

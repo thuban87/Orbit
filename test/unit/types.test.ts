@@ -201,6 +201,17 @@ describe('parseDate', () => {
         expect(result!.getMonth()).toBe(0);
         expect(result!.getDate()).toBe(1);
     });
+
+    it('parses non-ISO date string via native Date fallback', () => {
+        // Exercises the fallback branch at types.ts lines 177-179
+        // "Jan 15, 2024" does not match the ISO regex, so it falls through
+        // to `new Date(dateStr)` which can parse this format
+        const result = parseDate('Jan 15, 2024');
+        expect(result).toBeInstanceOf(Date);
+        expect(result!.getFullYear()).toBe(2024);
+        expect(result!.getMonth()).toBe(0); // January = 0
+        expect(result!.getDate()).toBe(15);
+    });
 });
 
 // ═══════════════════════════════════════════════════════════════

@@ -351,4 +351,217 @@ describe('FormRenderer', () => {
             });
         });
     });
+
+    // ── Photo Field — resolvePhotoSrc + Scrape Toggle ──
+    // Wave 2 — Testing Overhaul Plan lines 374-383
+    describe('photo field', () => {
+        const photoSchema = makeSchema([
+            { key: 'photo', type: 'photo', label: 'Photo', placeholder: 'Enter a URL, local path, or wikilink' },
+        ]);
+
+        it('photo field with URL renders <img> preview', () => {
+            const { container } = render(
+                <FormRenderer
+                    schema={photoSchema}
+                    onSubmit={onSubmit}
+                    initialValues={{ photo: 'https://example.com/pic.jpg' }}
+                />
+            );
+
+            const img = container.querySelector('.orbit-field__photo-img') as HTMLImageElement;
+            expect(img).not.toBeNull();
+            expect(img.src).toBe('https://example.com/pic.jpg');
+        });
+
+        it('photo field with URL shows scrape toggle', () => {
+            const { container } = render(
+                <FormRenderer
+                    schema={photoSchema}
+                    onSubmit={onSubmit}
+                    initialValues={{ photo: 'https://example.com/pic.jpg' }}
+                />
+            );
+
+            const scrapeToggle = container.querySelector('#orbit-field-scrape-photo') as HTMLInputElement;
+            expect(scrapeToggle).not.toBeNull();
+            expect(scrapeToggle.type).toBe('checkbox');
+        });
+
+        it('photo field with non-URL value hides scrape toggle', () => {
+            const { container } = render(
+                <FormRenderer
+                    schema={photoSchema}
+                    onSubmit={onSubmit}
+                    initialValues={{ photo: 'local/path/pic.jpg' }}
+                />
+            );
+
+            const scrapeToggle = container.querySelector('#orbit-field-scrape-photo');
+            expect(scrapeToggle).toBeNull();
+        });
+
+        it('photo field with empty value shows no preview', () => {
+            const { container } = render(
+                <FormRenderer schema={photoSchema} onSubmit={onSubmit} />
+            );
+
+            const preview = container.querySelector('.orbit-field__photo-preview');
+            expect(preview).toBeNull();
+        });
+
+        it('photo wikilink + App resolves via getFirstLinkpathDest', () => {
+            const mockResolved = { path: 'pics/resolved.jpg', name: 'resolved.jpg' };
+            const mockApp = {
+                metadataCache: {
+                    getFirstLinkpathDest: vi.fn(() => mockResolved),
+                },
+                vault: {
+                    getResourcePath: vi.fn(() => 'app://local/resolved.jpg'),
+                    adapter: {
+                        getResourcePath: vi.fn(),
+                    },
+                },
+            };
+
+            const { container } = render(
+                <FormRenderer
+                    schema={photoSchema}
+                    onSubmit={onSubmit}
+                    initialValues={{ photo: '[[avatar.jpg]]' }}
+                    app={mockApp as any}
+                />
+            );
+
+            expect(mockApp.metadataCache.getFirstLinkpathDest).toHaveBeenCalledWith('avatar.jpg', '');
+            expect(mockApp.vault.getResourcePath).toHaveBeenCalledWith(mockResolved);
+
+            const img = container.querySelector('.orbit-field__photo-img') as HTMLImageElement;
+            expect(img).not.toBeNull();
+            expect(img.src).toBe('app://local/resolved.jpg');
+        });
+
+        it('photo wikilink with null destination shows no preview', () => {
+            const mockApp = {
+                metadataCache: {
+                    getFirstLinkpathDest: vi.fn(() => null),
+                },
+                vault: {
+                    getResourcePath: vi.fn(),
+                    adapter: {
+                        getResourcePath: vi.fn(),
+                    },
+                },
+            };
+
+            const { container } = render(
+                <FormRenderer
+                    schema={photoSchema}
+                    onSubmit={onSubmit}
+                    initialValues={{ photo: '[[missing.jpg]]' }}
+                    app={mockApp as any}
+                />
+            );
+
+            const preview = container.querySelector('.orbit-field__photo-preview');
+            expect(preview).toBeNull();
+        });
+
+        it('photo vault-local path + App resolves via adapter', () => {
+            const mockApp = {
+                metadataCache: {
+                    getFirstLinkpathDest: vi.fn(),
+                },
+                vault: {
+                    getResourcePath: vi.fn(),
+                    adapter: {
+                        getResourcePath: vi.fn(() => 'app://local/assets/pic.jpg'),
+                    },
+                },
+            };
+
+            const { container } = render(
+                <FormRenderer
+                    schema={photoSchema}
+                    onSubmit={onSubmit}
+                    initialValues={{ photo: 'assets/pic.jpg' }}
+                    app={mockApp as any}
+                />
+            );
+
+            expect(mockApp.vault.adapter.getResourcePath).toHaveBeenCalledWith('assets/pic.jpg');
+
+            const img = container.querySelector('.orbit-field__photo-img') as HTMLImageElement;
+            expect(img).not.toBeNull();
+        });
+
+        it('photo without App — only URL shows preview', () => {
+            // URL should work without App
+            const { container: c1 } = render(
+                <FormRenderer
+                    schema={photoSchema}
+                    onSubmit={onSubmit}
+                    initialValues={{ photo: 'https://example.com/pic.jpg' }}
+                />
+            );
+            expect(c1.querySelector('.orbit-field__photo-img')).not.toBeNull();
+
+            // Non-URL without App should NOT show preview (resolvePhotoSrc returns null)
+            const { container: c2 } = render(
+                <FormRenderer
+                    schema={photoSchema}
+                    onSubmit={onSubmit}
+                    initialValues={{ photo: 'local/pic.jpg' }}
+                />
+            );
+            // local path without app → resolvePhotoSrc returns null → no preview? 
+            // Actually: resolvePhotoSrc returns null when !app and !isUrl, so no <img>
+            // But the photoSrc is truthy (local path passes through if no app check),
+            // Let's check: line 71 says if (!app) return null for non-URL
+            expect(c2.querySelector('.orbit-field__photo-preview')).toBeNull();
+        });
+
+        it('photo onError hides image and shows error span', () => {
+            const { container } = render(
+                <FormRenderer
+                    schema={photoSchema}
+                    onSubmit={onSubmit}
+                    initialValues={{ photo: 'https://broken.com/pic.jpg' }}
+                />
+            );
+
+            const img = container.querySelector('.orbit-field__photo-img') as HTMLImageElement;
+            expect(img).not.toBeNull();
+
+            // Simulate image load error
+            fireEvent.error(img);
+
+            expect(img.style.display).toBe('none');
+
+            const errorSpan = container.querySelector('.orbit-field__photo-error') as HTMLElement;
+            expect(errorSpan).not.toBeNull();
+            expect(errorSpan.style.display).toBe('block');
+        });
+    });
+
+    // ── Dropdown Edge Case ──────────────────────────────
+    describe('dropdown edge cases', () => {
+        it('dropdown with raw value not in options renders that value as an option', () => {
+            const schema = makeSchema([
+                { key: 'cat', type: 'dropdown', label: 'Category', options: ['A', 'B'] },
+            ]);
+            render(
+                <FormRenderer
+                    schema={schema}
+                    onSubmit={onSubmit}
+                    initialValues={{ cat: 'CustomValue' }}
+                />
+            );
+
+            const select = document.getElementById('orbit-field-cat') as HTMLSelectElement;
+            // Should have: "— Select —" + "CustomValue" (raw) + "A" + "B"
+            const optionValues = Array.from(select.options).map(o => o.value);
+            expect(optionValues).toContain('CustomValue');
+            expect(select.value).toBe('CustomValue');
+        });
+    });
 });

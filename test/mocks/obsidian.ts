@@ -88,7 +88,9 @@ export function createMockApp(overrides: {
                 write: vi.fn(async () => { }),
                 read: vi.fn(async () => ''),
                 exists: vi.fn(async () => false),
+                getResourcePath: vi.fn((path: string) => `app://local/${path}`),
             },
+            getResourcePath: vi.fn((file: any) => `app://local/${file?.path ?? file}`),
             getFolderByPath: vi.fn(() => null),
             getAbstractFileByPath: vi.fn(() => null),
             createFolder: vi.fn(async () => { }),
@@ -97,6 +99,7 @@ export function createMockApp(overrides: {
         },
         metadataCache: {
             getFileCache: vi.fn((file: TFile) => cacheMap.get(file) ?? null),
+            getFirstLinkpathDest: vi.fn(() => null),
             on: vi.fn(),
         },
         fileManager: {
