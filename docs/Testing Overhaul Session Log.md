@@ -305,25 +305,78 @@ Each session entry should include:
 
 ---
 
+## 2026-02-19 - Wave 5: Settings Tab (display(), photo settings, AI branches, migration)
+
+**Focus:** Unit tests for the remaining uncovered settings sections — main `display()` method, photo settings, AI provider branch coverage, and deprecated `aiApiKey` migration fallback.
+
+### Completed:
+
+#### New Test Files
+
+##### `display-main.test.ts` — 9 tests (NEW)
+- ✅ Creates "Orbit Settings" h2 heading
+- ✅ Person Tag renders and saves trimmed value on change
+- ✅ Ignored Folders splits comma-separated input into array
+- ✅ Date Format defaults to "YYYY-MM-DD" on empty input
+- ✅ Contacts folder renders with FolderSuggest
+- ✅ Template path saves trimmed value
+- ✅ Interaction log heading defaults to "Interaction Log" on empty
+- ✅ Schema folder renders with FolderSuggest
+- ✅ Generate Example Schema button calls `schemaLoader.generateExampleSchema()` + handles null schemaLoader
+
+##### `photo-settings.test.ts` — 5 tests (NEW)
+- ✅ Photo asset folder renders with FolderSuggest
+- ✅ Default scrape toggle reflects `defaultScrapeEnabled` setting value
+- ✅ Toggle change saves updated boolean value
+- ✅ Photo scrape on edit dropdown shows all 3 options (ask/always/never)
+- ✅ Dropdown change saves correct enum value
+
+#### Extended Test File
+
+##### `ai-settings.test.ts` — +4 tests (20 → 24 total)
+- ✅ Custom provider: Endpoint URL and Model name save trimmed values via onChange
+- ✅ Provider change from 'none' to cloud calls `this.display()` re-render
+- ✅ Reset prompt button restores `DEFAULT_PROMPT_TEMPLATE` and triggers re-render
+- ✅ Deprecated `aiApiKey` falls back via `??` when `aiApiKeys` is empty (migration)
+
+### Files Changed:
+
+- `test/unit/settings/display-main.test.ts` — NEW, 9 tests
+- `test/unit/settings/photo-settings.test.ts` — NEW, 5 tests
+- `test/unit/settings/ai-settings.test.ts` — MODIFIED, +4 tests (24 total)
+
+### Testing Notes:
+- ✅ Settings tests: **5 files, 53 tests, 0 failures**
+- ✅ Full test suite: **52 files, 833 tests, 0 failures** (up from 815)
+- ✅ `settings.ts` coverage: 89.85% stmts, 84.61% branches, 86.95% funcs, 89.78% lines
+- ✅ All metrics exceed 80% target
+- ✅ No regressions in existing tests
+
+### Blockers/Issues:
+- None
+- No source code bugs discovered
+- Remaining uncovered lines (418-439, 455-456) are the async model dropdown population logic (`provider.listModels().then()`) — deeply async branch, well above 80% floor
+
+---
+
 ## Next Session Prompt
 
 ```
-Continuing Testing Overhaul. Waves 0-4 are complete.
+Testing Overhaul is COMPLETE. All 5 waves are done.
 
-What was done last session:
-- Wave 4: 46 new modal tests across 3 new + 1 extended file
-- 815 total tests passing (50 files, 0 failures)
-- Bug flagged: openDirectUpdate() title stays Orbit instead of Update {name}
+Final stats:
+- 52 test files, 833 tests, 0 failures
+- All target files at or above 80% lines + branches
+- settings.ts: 89.85% stmts, 84.61% branches
 
-Next up: Wave 5 — Settings tab (~18 tests)
-- See Testing Overhaul Plan.md for full spec
-- Last wave! Should be straightforward.
+Outstanding items:
+- Bug flagged in Wave 4: openDirectUpdate() title stays Orbit instead of Update {name}
+- Dead useOrbit import in OrbitHeader.tsx (flagged in Wave 2)
 
 Key files to reference:
-- docs/Testing Overhaul Plan.md — Full wave breakdown
+- docs/Testing Overhaul Plan.md — Full wave breakdown (all marked ✅)
 - docs/Testing Overhaul Session Log.md — This log
-- src/settings.ts — Target file
-- test/mocks/obsidian.ts — Mock infrastructure
+- docs/Feature Priority List.md — Project status
 ```
 
 ---
@@ -331,15 +384,15 @@ Key files to reference:
 ## Git Commit Message
 
 ```
-test(wave-4): add 46 modal tests for AiResultModal, SchemaPickerModal, ScrapeConfirmModal, OrbitHubModal
+test(wave-5): add 18 settings tab tests for display, photos, AI branches, migration
 
-Wave 4 - Modals:
-- NEW ai-result-modal.test.ts: 13 tests (photo resolution, lifecycle, message/error, regenerate, copy)
-- NEW schema-picker-modal.test.ts: 4 tests (constructor, getItems, getItemText, onChooseItem)
-- NEW scrape-confirm-modal.test.ts: 6 tests (lifecycle, button handlers via Setting spy)
-- EXTENDED orbit-hub-modal.test.ts: +23 tests (selection, update/edit/add/digest/suggest/save/cancel flows)
-- Updated test/mocks/obsidian.ts: added getResourcePath and getFirstLinkpathDest to createMockApp
+Wave 5 - Settings Tab:
+- NEW display-main.test.ts: 9 tests (heading, person tag, ignored folders, date format, contacts folder, template path, interaction log heading, schema folder, generate button + null guard)
+- NEW photo-settings.test.ts: 5 tests (folder, toggle state/save, dropdown options/save)
+- EXTENDED ai-settings.test.ts: +4 tests (custom endpoint/model onChange, provider change re-render, reset prompt, aiApiKey migration fallback)
+- settings.ts coverage: 89.85% stmts, 84.61% branches, 89.78% lines (was 66.4%)
 
-Test suite: 50 files, 815 tests, 0 failures (was 769)
-Bug flagged: openDirectUpdate() title stays Orbit - onOpen() should call updateTitle()
+Testing Overhaul complete: 52 files, 833 tests, 0 failures
+All target files at or above 80% lines + branches
 ```
+

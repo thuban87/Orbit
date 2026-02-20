@@ -209,4 +209,178 @@ describe('OrbitSettingTab AI section', () => {
             expect(ollamaOption).toBeDefined();
         }
     });
+
+    // ═══════════════════════════════════════════════════════════════
+    // WAVE 5 ADDITIONS — AI BRANCH COVERAGE + MIGRATION
+    // ═══════════════════════════════════════════════════════════════
+
+    it('should save custom endpoint URL and model name via onChange', async () => {
+        mockPlugin.settings.aiProvider = 'custom';
+        polyfillEl(settingTab.containerEl);
+
+        const onChanges: { name: string; fn: (value: string) => Promise<void> }[] = [];
+        let currentName = '';
+        const origSetName = Setting.prototype.setName;
+        const origAddText = Setting.prototype.addText;
+
+        Setting.prototype.setName = function (name: string) {
+            currentName = name;
+            return origSetName.call(this, name);
+        };
+
+        Setting.prototype.addText = function (cb: (text: any) => void) {
+            const text = {
+                setPlaceholder: vi.fn().mockReturnThis(),
+                setValue: vi.fn().mockReturnThis(),
+                onChange: vi.fn(function (this: any, fn: (value: string) => Promise<void>) {
+                    onChanges.push({ name: currentName, fn });
+                    return this;
+                }),
+                inputEl: document.createElement('input'),
+            };
+            cb(text);
+            return this;
+        };
+
+        settingTab.display();
+        Setting.prototype.setName = origSetName;
+        Setting.prototype.addText = origAddText;
+
+        const endpointChange = onChanges.find(o => o.name === 'Endpoint URL');
+        expect(endpointChange).toBeDefined();
+        await endpointChange!.fn('  https://my-api.com/v1  ');
+        expect(mockPlugin.settings.aiCustomEndpoint).toBe('https://my-api.com/v1');
+        expect(mockPlugin.saveSettings).toHaveBeenCalled();
+
+        const modelChange = onChanges.find(o => o.name === 'Model name');
+        expect(modelChange).toBeDefined();
+        await modelChange!.fn('  gpt-4  ');
+        expect(mockPlugin.settings.aiCustomModel).toBe('gpt-4');
+    });
+
+    it('should call display() to re-render when provider changes from none to cloud', async () => {
+        mockPlugin.settings.aiProvider = 'none';
+        polyfillEl(settingTab.containerEl);
+
+        let capturedOnChange: ((value: string) => Promise<void>) | null = null;
+        let currentName = '';
+        const origSetName = Setting.prototype.setName;
+        const origAddDropdown = Setting.prototype.addDropdown;
+
+        Setting.prototype.setName = function (name: string) {
+            currentName = name;
+            return origSetName.call(this, name);
+        };
+
+        Setting.prototype.addDropdown = function (cb: (dropdown: any) => void) {
+            const dropdown = {
+                addOption: vi.fn().mockReturnThis(),
+                addOptions: vi.fn().mockReturnThis(),
+                setValue: vi.fn().mockReturnThis(),
+                onChange: vi.fn(function (this: any, fn: (value: string) => Promise<void>) {
+                    if (currentName === 'Provider') {
+                        capturedOnChange = fn;
+                    }
+                    return this;
+                }),
+            };
+            cb(dropdown);
+            return this;
+        };
+
+        settingTab.display();
+        Setting.prototype.setName = origSetName;
+        Setting.prototype.addDropdown = origAddDropdown;
+
+        const displaySpy = vi.spyOn(settingTab, 'display');
+        expect(capturedOnChange).not.toBeNull();
+        await capturedOnChange!('openai');
+        expect(displaySpy).toHaveBeenCalled();
+        expect(mockPlugin.settings.aiProvider).toBe('openai');
+        displaySpy.mockRestore();
+    });
+
+    it('should reset prompt template to default and re-render', async () => {
+        mockPlugin.settings.aiProvider = 'openai';
+        mockPlugin.settings.aiPromptTemplate = 'custom template';
+        polyfillEl(settingTab.containerEl);
+
+        let capturedOnClick: (() => Promise<void>) | null = null;
+        let currentName = '';
+        const origSetName = Setting.prototype.setName;
+        const origAddButton = Setting.prototype.addButton;
+
+        Setting.prototype.setName = function (name: string) {
+            currentName = name;
+            return origSetName.call(this, name);
+        };
+
+        Setting.prototype.addButton = function (cb: (button: any) => void) {
+            const button = {
+                setButtonText: vi.fn().mockReturnThis(),
+                setCta: vi.fn().mockReturnThis(),
+                onClick: vi.fn((handler: () => Promise<void>) => {
+                    if (currentName === 'Reset prompt template') {
+                        capturedOnClick = handler;
+                    }
+                    return button;
+                }),
+                buttonEl: document.createElement('button'),
+            };
+            cb(button);
+            return this;
+        };
+
+        settingTab.display();
+        Setting.prototype.setName = origSetName;
+        Setting.prototype.addButton = origAddButton;
+
+        const displaySpy = vi.spyOn(settingTab, 'display');
+        expect(capturedOnClick).not.toBeNull();
+        await capturedOnClick!();
+        expect(mockPlugin.settings.aiPromptTemplate).toBe(DEFAULT_PROMPT_TEMPLATE);
+        expect(mockPlugin.saveSettings).toHaveBeenCalled();
+        expect(displaySpy).toHaveBeenCalled();
+        displaySpy.mockRestore();
+    });
+
+    it('should fall back to deprecated aiApiKey when aiApiKeys is empty (migration)', () => {
+        mockPlugin.settings.aiProvider = 'openai';
+        mockPlugin.settings.aiApiKey = 'legacy-key-123';
+        mockPlugin.settings.aiApiKeys = {};
+        polyfillEl(settingTab.containerEl);
+
+        let capturedSetValue: string | null = null;
+        let currentName = '';
+        const origSetName = Setting.prototype.setName;
+        const origAddText = Setting.prototype.addText;
+
+        Setting.prototype.setName = function (name: string) {
+            currentName = name;
+            return origSetName.call(this, name);
+        };
+
+        Setting.prototype.addText = function (cb: (text: any) => void) {
+            const text = {
+                setPlaceholder: vi.fn().mockReturnThis(),
+                setValue: vi.fn(function (this: any, val: string) {
+                    if (currentName === 'API key') {
+                        capturedSetValue = val;
+                    }
+                    return this;
+                }),
+                onChange: vi.fn().mockReturnThis(),
+                inputEl: document.createElement('input'),
+            };
+            cb(text);
+            return this;
+        };
+
+        settingTab.display();
+        Setting.prototype.setName = origSetName;
+        Setting.prototype.addText = origAddText;
+
+        // The ?? fallback should resolve to the legacy key
+        expect(capturedSetValue).toBe('legacy-key-123');
+    });
 });

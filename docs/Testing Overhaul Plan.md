@@ -578,7 +578,7 @@ Services (`OrbitIndex`, `LinkListener`, `AiService`, `ContactManager`, `ImageScr
 
 ---
 
-## Wave 5: Settings Tab — 🟡 MEDIUM EFFORT
+## ✅ Wave 5: Settings Tab — 🟡 MEDIUM EFFORT
 
 **Estimated tests:** ~18
 **Session estimate:** ½ session
