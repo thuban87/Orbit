@@ -8,6 +8,9 @@ docs/development/
 main.js
 *.js.map
 
+# Temporary release notes
+.release-notes.md
+
 # TypeScript cache
 *.tsbuildinfo
 

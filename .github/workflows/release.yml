@@ -43,20 +43,25 @@ jobs:
       - name: Build
         run: npm run build
 
-      # 6. Create GitHub release with assets
+      # 6. Read release notes (if prepared by the /release workflow)
+      - name: Check for release notes
+        id: notes
+        run: |
+          if [ -f .release-notes.md ]; then
+            echo "has_notes=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_notes=false" >> $GITHUB_OUTPUT
+          fi
+
+      # 7. Create GitHub release with assets
       #    BRAT downloads main.js, manifest.json, and styles.css
       #    from GitHub release assets
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           name: ${{ github.ref_name }}
-          body: |
-            ## Orbit v${{ github.ref_name }}
-
-            Install via [BRAT](https://github.com/TfTHacker/obsidian42-brat):
-            1. Open BRAT settings
-            2. Click "Add Beta plugin"
-            3. Enter: `thuban87/Orbit`
+          body_path: ${{ steps.notes.outputs.has_notes == 'true' && '.release-notes.md' || '' }}
+          generate_release_notes: ${{ steps.notes.outputs.has_notes != 'true' }}
           draft: false
           prerelease: false
           files: |
