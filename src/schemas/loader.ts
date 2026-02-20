@@ -376,6 +376,33 @@ frequency: Monthly
 birthday:
 notes:
 ---
+
+\`\`\`fields
+- key: name
+  type: text
+  label: Full name
+  placeholder: First and last name
+  required: true
+- key: company
+  type: text
+  label: Company
+  placeholder: Where they work
+- key: frequency
+  type: dropdown
+  label: Check-in frequency
+  options: [Daily, Weekly, Bi-Weekly, Monthly, Quarterly, Bi-Annually, Yearly]
+  default: Monthly
+  required: true
+- key: birthday
+  type: date
+  label: Birthday
+  layout: half-width
+- key: notes
+  type: textarea
+  label: Notes
+  placeholder: Anything worth remembering
+\`\`\`
+
 # {{name}}
 
 > Company: {{company}}
@@ -387,6 +414,61 @@ notes:
 -
 
 ## Interaction Log
+
+<!--
+=====================================
+   ORBIT SCHEMA GUIDE
+=====================================
+
+This file is a custom Orbit schema. It controls the form that appears
+when you create a new contact using "New Person" and pick this template.
+
+RESERVED FRONTMATTER KEYS (not shown as form fields):
+  schema_id      - Unique ID for this schema (required)
+  schema_title   - Name shown in the schema picker (required)
+  output_path    - File path template, use {{key}} placeholders
+  submit_label   - Custom text for the submit button
+  cssClass       - Optional CSS class for styling
+
+TWO WAYS TO DEFINE FIELDS:
+
+1. FLAT YAML PROPERTIES (simple)
+   Add any key to the frontmatter and it becomes a text input:
+
+     company:         -> empty text field labeled "Company"
+     frequency: Monthly -> pre-filled text field
+
+2. FIELDS CODE BLOCK (advanced)
+   Add a \`\`\`fields code block in the body for typed fields:
+
+     - key: category
+       type: dropdown
+       label: Category
+       options: [Family, Friends, Work]
+       default: Friends
+       required: true
+
+   Supported field properties:
+     key         - Frontmatter property name (required)
+     type        - text, dropdown, textarea, date, or photo (required)
+     label       - Display label in the form (required)
+     placeholder - Hint text in empty fields
+     required    - true or false
+     default     - Pre-filled value
+     options     - Array for dropdowns: [Option1, Option2]
+     layout      - "half-width" for side-by-side layout
+     description - Help text below the field
+
+   If a key appears in both the frontmatter AND the fields block,
+   the fields block takes precedence.
+
+BODY TEMPLATE:
+   Everything after the fields block (and not inside this comment)
+   becomes the body of the created contact file. Use {{key}}
+   placeholders to insert form values.
+
+For full documentation, see: docs/Custom Schemas.md
+-->
 `;
 
         const file = await this.app.vault.create(filePath, exampleContent);

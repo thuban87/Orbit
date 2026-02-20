@@ -5,18 +5,17 @@
  * Usage:
  *   node deploy.mjs test        → Deploy to test vault
  *   node deploy.mjs staging     → Deploy to staging vault
- *   node deploy.mjs production  → Deploy to production vault (requires confirmation)
+ *
+ * Note: Production deployment is handled via BRAT (GitHub releases).
  */
 
 import { copyFileSync, existsSync, mkdirSync } from "fs";
 import { join } from "path";
-import { createInterface } from "readline";
 
 // Deploy targets
 const TARGETS = {
     test: "C:\\Quest-Board-Test-Vault\\.obsidian\\plugins\\orbit",
     staging: "C:\\Quest-Board-Staging-Vault\\Staging Vault\\.obsidian\\plugins\\orbit",
-    production: "G:\\My Drive\\IT\\Obsidian Vault\\My Notebooks\\.obsidian\\plugins\\orbit",
 };
 
 // Files to copy
@@ -26,61 +25,31 @@ const FILES_TO_COPY = ["main.js", "manifest.json", "styles.css"];
 const target = process.argv[2];
 
 if (!target || !TARGETS[target]) {
-    console.error("❌ Usage: node deploy.mjs <test|staging|production>");
-    console.error("   test       → Deploy to test vault");
-    console.error("   staging    → Deploy to staging vault");
-    console.error("   production → Deploy to production vault (requires confirmation)");
+    console.error("❌ Usage: node deploy.mjs <test|staging>");
+    console.error("   test    → Deploy to test vault");
+    console.error("   staging → Deploy to staging vault");
     process.exit(1);
 }
 
 const deployDir = TARGETS[target];
 
-/**
- * Prompt user for confirmation (production only).
- */
-async function confirmDeploy() {
-    if (target !== "production") return true;
-
-    const rl = createInterface({ input: process.stdin, output: process.stdout });
-
-    return new Promise((resolve) => {
-        console.log("\n⚠️  You are about to deploy to PRODUCTION:");
-        console.log(`   ${deployDir}\n`);
-        rl.question("Type 'yes' to confirm: ", (answer) => {
-            rl.close();
-            resolve(answer.trim().toLowerCase() === "yes");
-        });
-    });
+// Ensure deploy directory exists
+if (!existsSync(deployDir)) {
+    mkdirSync(deployDir, { recursive: true });
+    console.log(`Created deploy directory: ${deployDir}`);
 }
 
-async function deploy() {
-    const confirmed = await confirmDeploy();
+// Copy files
+for (const file of FILES_TO_COPY) {
+    const src = join(process.cwd(), file);
+    const dest = join(deployDir, file);
 
-    if (!confirmed) {
-        console.log("\n🚫 Deployment cancelled.");
-        process.exit(0);
+    if (existsSync(src)) {
+        copyFileSync(src, dest);
+        console.log(`✓ Copied ${file} → ${dest}`);
+    } else {
+        console.warn(`⚠ Warning: ${file} not found, skipping...`);
     }
-
-    // Ensure deploy directory exists
-    if (!existsSync(deployDir)) {
-        mkdirSync(deployDir, { recursive: true });
-        console.log(`Created deploy directory: ${deployDir}`);
-    }
-
-    // Copy files
-    for (const file of FILES_TO_COPY) {
-        const src = join(process.cwd(), file);
-        const dest = join(deployDir, file);
-
-        if (existsSync(src)) {
-            copyFileSync(src, dest);
-            console.log(`✓ Copied ${file} → ${dest}`);
-        } else {
-            console.warn(`⚠ Warning: ${file} not found, skipping...`);
-        }
-    }
-
-    console.log(`\n🚀 Deployment to ${target} complete!`);
 }
 
-deploy();
+console.log(`\n🚀 Deployment to ${target} complete!`);

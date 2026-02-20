@@ -332,7 +332,7 @@ name:
 
     // ── Generate Example Schema ─────────────────────────────────
 
-    it('generates example with flat frontmatter', async () => {
+    it('generates example with fields block and walkthrough', async () => {
         const createdFile = new TFile('Schemas/Example Schema.md');
         app.vault.getFolderByPath.mockReturnValue(null);
         app.vault.getAbstractFileByPath.mockReturnValue(null);
@@ -346,8 +346,14 @@ name:
         expect(content).toContain('schema_id: example-contact');
         expect(content).toContain('name:');
         expect(content).toContain('company:');
-        expect(content).not.toContain('type: text'); // no complex field defs
-        expect(content).not.toContain('key: name'); // no complex field defs
+        // Now includes a fields code block with typed fields
+        expect(content).toContain('type: text');
+        expect(content).toContain('type: dropdown');
+        expect(content).toContain('type: date');
+        expect(content).toContain('type: textarea');
+        // Includes the walkthrough guide as an HTML comment
+        expect(content).toContain('ORBIT SCHEMA GUIDE');
+        expect(content).toContain('TWO WAYS TO DEFINE FIELDS');
     });
 
     it('returns null when no folder configured', async () => {

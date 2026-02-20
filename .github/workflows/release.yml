@@ -1,0 +1,65 @@
+name: Release
+
+# Triggers on semver tag push (no 'v' prefix — required by Obsidian/BRAT)
+# Example: git tag 0.9.0 && git push origin main --tags
+on:
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
+
+# Prevent concurrent releases
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  release:
+    name: Build & Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      # 1. Check out the repo at the tagged commit
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Set up Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # 3. Install dependencies
+      - name: Install dependencies
+        run: npm ci
+
+      # 4. Run tests (fail fast if tests don't pass)
+      - name: Run tests
+        run: npm test
+
+      # 5. Build production bundle
+      - name: Build
+        run: npm run build
+
+      # 6. Create GitHub release with assets
+      #    BRAT downloads main.js, manifest.json, and styles.css
+      #    from GitHub release assets
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          body: |
+            ## Orbit v${{ github.ref_name }}
+
+            Install via [BRAT](https://github.com/TfTHacker/obsidian42-brat):
+            1. Open BRAT settings
+            2. Click "Add Beta plugin"
+            3. Enter: `thuban87/Orbit`
+          draft: false
+          prerelease: false
+          files: |
+            main.js
+            manifest.json
+            styles.css

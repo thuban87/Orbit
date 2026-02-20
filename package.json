@@ -1,6 +1,6 @@
 {
   "name": "obsidian-orbit",
-  "version": "0.0.1",
+  "version": "0.9.0",
   "description": "A Relationship Manager plugin for Obsidian - Keep your people in your orbit",
   "main": "main.js",
   "scripts": {
@@ -10,8 +10,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "deploy:test": "node esbuild.config.mjs production && node deploy.mjs test",
-    "deploy:staging": "node esbuild.config.mjs production && node deploy.mjs staging",
-    "deploy:production": "node esbuild.config.mjs production && node deploy.mjs production"
+    "deploy:staging": "node esbuild.config.mjs production && node deploy.mjs staging"
   },
   "keywords": [
     "obsidian",

@@ -1,6 +1,9 @@
 # Dependencies
 node_modules/
 
+# Development docs (keep user-facing docs in docs/)
+docs/development/
+
 # Build output
 main.js
 *.js.map
